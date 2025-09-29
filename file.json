@@ -1,0 +1,67 @@
+{
+  "Status": "000",
+  "Type": "object",
+  "Data": {
+    "Loans": [
+      {
+        "LoanId": "11",
+        "LoanStatus": "PendingPayment",
+        "PrincipalAmount": "",
+        "CurrentBalance": "",
+        "Date": "21 October 2024 13:48:34",
+        "ReferenceId": "954637",
+        "RepaymentDate": "08 August 2024",
+        "RequestType": "SELF",
+        "TotalPrincipalDisbursed": "50000.00",
+        "TotalRepaymentExpected": "54052.21",
+        "TotalPrincipalExpected": "50000.00",
+        "TotalOutstanding": "54052.21",
+        "LoanTermInDays": "92",
+        "PastDueDays": "",
+        "PaymentBeforeDate": "",
+        "MobileNumber": "250782000000",
+        "Names": "John Doe",
+        "Id": "2000000"
+      }
+    ],
+    "LoanBalance": "",
+    "Rates": {
+      "RWF": "1"
+    },
+    "Email": "ntawiha.jp@gmail.com",
+    "LoanStatus": "PendingPayment",
+    "Identification": "250782000000",
+    "ProcessingFee": "",
+    "LoanAmount": "",
+    "ReferenceId": "103556",
+    "Currency": "RWF",
+    "LoanTermPeriod": "30 days",
+    "DueDate": "08 August 2024",
+    "InterestRate": "10%",
+    "DateOfBirth": "",
+    "LimitMessage": "Congratulations! you have qualified for maximum loan limit",
+    "LimitStatus": "Success",
+    "FirstName": "John",
+    "LimitAmount": 100000,
+    "OtherName": null,
+    "CustomerId": "2000000",
+    "LoanTermValue": 30,
+    "IdentificationType": "ID",
+    "MobileNumber": "250782000000",
+    "Customers": [
+      {
+        "CustomerId": "2000000",
+        "FirstName": "John",
+        "LastName": "Doe",
+        "Identification": "250782000000",
+        "Email": "ntawiha.jp@gmail.com",
+        "MobileNumber": "250782000000"
+      }
+    ],
+    "DisplayLimit": "RWF 100000",
+    "ApplicationFee": 0.0,
+    "Country": "Africa",
+    "PaymentMethod": null,
+    "LastName": "Doe"
+  }
+}
