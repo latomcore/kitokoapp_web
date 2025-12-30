@@ -1,21 +1,27 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart'; // Import ScreenUtil
+import 'package:flutter/foundation.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:kitokopay/src/screens/auth/login.dart';
 import 'package:kitokopay/src/screens/auth/otp.dart';
 import 'package:kitokopay/src/screens/ui/home.dart';
 import 'package:kitokopay/src/screens/ui/loans.dart';
 import 'package:kitokopay/src/screens/ui/payments.dart';
 import 'package:kitokopay/src/screens/ui/remittance.dart';
+import 'package:kitokopay/src/screens/splash/splash_screen.dart';
+import 'package:kitokopay/config/app_config.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding
-      .ensureInitialized(); // Ensure Flutter bindings are initialized
+  WidgetsFlutterBinding.ensureInitialized();
 
-  // try {
-  //   await dotenv.load(fileName: ".env"); // Load environment variables
-  // } catch (e) {
-  //   debugPrint("Error loading .env file: $e"); // Handle error gracefully
-  // }
+  // Suppress widget inspector errors in Flutter web debug mode
+  // This is a known issue with Flutter web's debug inspector
+  if (kDebugMode) {
+    debugPrint('⚠️ Running in debug mode. Widget inspector errors may appear but are harmless.');
+  }
+
+  // Validate and print configuration (async)
+  await AppConfig.validate();
+  await AppConfig.printConfig();
 
   runApp(const MyApp());
 }
@@ -38,7 +44,7 @@ class MyApp extends StatelessWidget {
           ),
           initialRoute: '/',
           routes: {
-            '/': (context) => const LoginScreen(), // Initial screen
+            '/': (context) => const SplashScreen(), // Splash screen (fetches PUBLIC_KEY)
             '/otp': (context) => const OtpPage(), // OTP
             '/home': (context) => const HomeScreen(), // Home screen
             '/payments': (context) => const PaymentPage(), // Payments screen
