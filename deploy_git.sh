@@ -80,7 +80,7 @@ fi
 echo "🔨 Building Flutter web app for production..."
 flutter build web \
   --release \
-  --base-href="/kitokoappweb/" \
+  --base-href="/" \
   --dart-define=ELMS_BASE_URL=https://kitokoapp.com/elms \
   --dart-define=API_USERNAME=KL0Qw0Vdd \
   --dart-define=API_PASSWORD=Db0wU8eRzU3Yz0P3zJ \
@@ -113,7 +113,7 @@ sudo chmod -R 755 $DEPLOY_PATH
 echo ""
 echo "✅ Deployment completed successfully!"
 echo "🌐 Your app should now be available at:"
-echo "   http://your_domain.com/kitokoappweb/"
+echo "   https://kitokoapp.com/"
 echo ""
 echo "📋 Post-deployment checklist:"
 echo "   [ ] Test the application in browser"

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:kitokopay/service/api_client.dart';
 import 'dart:typed_data';
 import 'package:pointycastle/export.dart';
@@ -10,6 +11,8 @@ import 'package:pointycastle/asymmetric/api.dart' as pointycastle;
 import 'package:asn1lib/asn1lib.dart';
 import 'package:encrypt/encrypt.dart' as encryptPackage;
 import 'package:kitokopay/service/token_storage.dart';
+import 'package:kitokopay/service/public_key_service.dart';
+import 'package:kitokopay/config/app_config.dart';
 import 'dart:html' as html; // Import html for localStorage
 import 'dart:async'; // Import for Timer
 // import dotenv
@@ -19,19 +22,42 @@ class ElmsSSL {
   static String basic_username = "L@T0wU8eR";
   static String basic_password = "TGF0MHdDb1IzU3Yz";
 
-  // String get publicKeyString =>
-  //     dotenv.env['PUBLIC_KEY'] ?? 'No Public Key Found';
+  // Cached PUBLIC_KEY for synchronous access
+  static String? _cachedPublicKey;
 
-  // String publicKeyString =
-  //     "";
+  /// Initialize the cached PUBLIC_KEY from secure storage.
+  /// This should be called once during app startup (e.g., splash screen).
+  static Future<void> initializePublicKey() async {
+    try {
+      final publicKeyService = PublicKeyService();
+      final publicKey = await publicKeyService.getPublicKey(forceRefresh: false);
+      _cachedPublicKey = publicKey ?? 'No Public Key Found';
+      
+      if (kDebugMode) {
+        debugPrint('✅ ElmsSSL cached PUBLIC_KEY initialized (${_cachedPublicKey?.length ?? 0} chars)');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Failed to initialize PUBLIC_KEY in ElmsSSL: $e');
+      }
+      _cachedPublicKey = 'No Public Key Found';
+    }
+  }
 
   String get publicKeyString {
-    // Load PUBLIC_KEY from compile-time variables or fallback to runtime dotenv
-    return const String.fromEnvironment('PUBLIC_KEY',
-                defaultValue: 'No Public Key Found') !=
-            'No Public Key Found'
-        ? const String.fromEnvironment('PUBLIC_KEY')
-        : (dotenv.env['PUBLIC_KEY'] ?? 'No Public Key Found');
+    // First try cached value
+    if (_cachedPublicKey != null && _cachedPublicKey != 'No Public Key Found') {
+      return _cachedPublicKey!;
+    }
+    
+    // Fallback to compile-time variables or dotenv
+    final envKey = const String.fromEnvironment('PUBLIC_KEY', defaultValue: 'No Public Key Found');
+    if (envKey != 'No Public Key Found') {
+      return envKey;
+    }
+    
+    // Last resort: try dotenv
+    return dotenv.env['PUBLIC_KEY'] ?? 'No Public Key Found';
   }
 
   void printLongString(String text) {

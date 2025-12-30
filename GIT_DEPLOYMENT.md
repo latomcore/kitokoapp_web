@@ -96,11 +96,11 @@ Create `/etc/apache2/sites-available/kitokoappweb.conf`:
         
         # Flutter web routing support
         RewriteEngine On
-        RewriteBase /kitokoappweb/
+        RewriteBase /
         RewriteRule ^index\.html$ - [L]
         RewriteCond %{REQUEST_FILENAME} !-f
         RewriteCond %{REQUEST_FILENAME} !-d
-        RewriteRule . /kitokoappweb/index.html [L]
+        RewriteRule . /index.html [L]
     </Directory>
     
     ErrorLog ${APACHE_LOG_DIR}/kitokoappweb_error.log

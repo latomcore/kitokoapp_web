@@ -1,15 +1,16 @@
 # Apache Configuration for Flutter Web
 # Place this file in /var/www/html/kitokoappweb/ after deployment
+# This is for root domain deployment (https://kitokoapp.com)
 
 # Enable rewrite engine
 RewriteEngine On
-RewriteBase /kitokoappweb/
+RewriteBase /
 
 # Handle Flutter web routing - redirect all requests to index.html
 # except for existing files and directories
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^(.*)$ /kitokoappweb/index.html [L]
+RewriteRule ^(.*)$ /index.html [L]
 
 # Security Headers
 <IfModule mod_headers.c>

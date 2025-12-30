@@ -17,11 +17,11 @@ echo "📦 Getting dependencies..."
 flutter pub get
 
 # Build for production with all configuration
-# Note: --base-href is set to /kitokoappweb/ for subdirectory deployment
+# Note: --base-href is set to / for root domain deployment (https://kitokoapp.com)
 echo "🔨 Building for production..."
 flutter build web \
   --release \
-  --base-href="/kitokoappweb/" \
+  --base-href="/" \
   --dart-define=ELMS_BASE_URL=https://kitokoapp.com/elms \
   --dart-define=API_USERNAME=KL0Qw0Vdd \
   --dart-define=API_PASSWORD=Db0wU8eRzU3Yz0P3zJ \
