@@ -1118,234 +1118,307 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
                             
                             const SizedBox(height: 24),
                             
-                            // Back Button (outside card, only if not on first step)
-                            if (_currentStep > 0) ...[
-                              SizedBox(
-                                width: double.infinity,
-                                child: OutlinedButton(
-                                  onPressed: _previousStep,
-                                  style: OutlinedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(vertical: 16),
-                                    side: BorderSide(color: Colors.grey.shade300, width: 1.5),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
+                            // Step 0: White Card Container with Continue, "or" divider, and Navigation Buttons
+                            if (_currentStep == 0) ...[
+                              Container(
+                                padding: const EdgeInsets.all(24),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.1),
+                                      blurRadius: 20,
+                                      offset: const Offset(0, 10),
                                     ),
-                                  ),
-                                  child: const Text("Back"),
+                                  ],
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    // Continue Button (Primary)
+                                    SizedBox(
+                                      height: 56,
+                                      child: ElevatedButton(
+                                        onPressed: _isLoading ? null : _nextStep,
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.transparent,
+                                          shadowColor: Colors.transparent,
+                                          elevation: 0,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                        ).copyWith(
+                                          backgroundColor: MaterialStateProperty.resolveWith<Color>(
+                                            (Set<MaterialState> states) {
+                                              if (states.contains(MaterialState.disabled)) {
+                                                return Colors.grey.shade300;
+                                              }
+                                              return Colors.transparent;
+                                            },
+                                          ),
+                                        ),
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            gradient: LinearGradient(
+                                              begin: Alignment.centerLeft,
+                                              end: Alignment.centerRight,
+                                              colors: [
+                                                Colors.blue.shade400,
+                                                Colors.blue.shade600,
+                                              ],
+                                            ),
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          child: _isLoading
+                                              ? const Center(
+                                                  child: Padding(
+                                                    padding: EdgeInsets.all(16.0),
+                                                    child: SizedBox(
+                                                      height: 24,
+                                                      width: 24,
+                                                      child: CircularProgressIndicator(
+                                                        strokeWidth: 2.5,
+                                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                )
+                                              : const Center(
+                                                  child: Padding(
+                                                    padding: EdgeInsets.symmetric(vertical: 16.0),
+                                                    child: Text(
+                                                      "Continue",
+                                                      style: TextStyle(
+                                                        fontSize: 16,
+                                                        fontWeight: FontWeight.bold,
+                                                        color: Colors.white,
+                                                        letterSpacing: 0.5,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 24),
+
+                                    // Divider with "or"
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Divider(
+                                            color: Colors.grey.shade300,
+                                            thickness: 1,
+                                          ),
+                                        ),
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                                          child: Text(
+                                            "or",
+                                            style: TextStyle(
+                                              color: Colors.grey.shade500,
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ),
+                                        Expanded(
+                                          child: Divider(
+                                            color: Colors.grey.shade300,
+                                            thickness: 1,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 24),
+
+                                    // Navigation Buttons
+                                    Row(
+                                      children: [
+                                        // Activate Account Button
+                                        Expanded(
+                                          child: OutlinedButton(
+                                            onPressed: () {
+                                              Navigator.pushReplacement(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) => const OtpPage(),
+                                                ),
+                                              );
+                                            },
+                                            style: OutlinedButton.styleFrom(
+                                              padding: const EdgeInsets.symmetric(vertical: 14),
+                                              side: BorderSide(
+                                                color: Colors.grey.shade300,
+                                                width: 1.5,
+                                              ),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(12),
+                                              ),
+                                              backgroundColor: Colors.white,
+                                            ),
+                                            child: Row(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: [
+                                                Icon(
+                                                  Icons.verified_user_outlined,
+                                                  size: 20,
+                                                  color: Colors.grey.shade700,
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Text(
+                                                  "Activate Account",
+                                                  style: TextStyle(
+                                                    fontSize: 15,
+                                                    fontWeight: FontWeight.w500,
+                                                    color: Colors.grey.shade800,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        // Log In Button
+                                        Expanded(
+                                          child: OutlinedButton(
+                                            onPressed: () {
+                                              Navigator.pushReplacement(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) => const LoginScreen(),
+                                                ),
+                                              );
+                                            },
+                                            style: OutlinedButton.styleFrom(
+                                              padding: const EdgeInsets.symmetric(vertical: 14),
+                                              side: BorderSide(
+                                                color: Colors.grey.shade300,
+                                                width: 1.5,
+                                              ),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(12),
+                                              ),
+                                              backgroundColor: Colors.white,
+                                            ),
+                                            child: Row(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: [
+                                                Icon(
+                                                  Icons.login_outlined,
+                                                  size: 20,
+                                                  color: Colors.grey.shade700,
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Text(
+                                                  "Log In",
+                                                  style: TextStyle(
+                                                    fontSize: 15,
+                                                    fontWeight: FontWeight.w500,
+                                                    color: Colors.grey.shade800,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ),
                               ),
-                              const SizedBox(height: 16),
-                            ],
-                            
-                            // White Card Container with Buttons
-                            Container(
-                              padding: const EdgeInsets.all(24),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(16),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 20,
-                                    offset: const Offset(0, 10),
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                            ] else ...[
+                              // Steps 1-3: Back and Continue buttons only
+                              Row(
                                 children: [
-                                  // Continue/Submit Button (Primary)
-                                  SizedBox(
-                                    height: 56,
-                                    child: ElevatedButton(
-                                      onPressed: _isLoading ? null : _nextStep,
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.transparent,
-                                        shadowColor: Colors.transparent,
-                                        elevation: 0,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                      ).copyWith(
-                                        backgroundColor: MaterialStateProperty.resolveWith<Color>(
-                                          (Set<MaterialState> states) {
-                                            if (states.contains(MaterialState.disabled)) {
-                                              return Colors.grey.shade300;
-                                            }
-                                            return Colors.transparent;
-                                          },
-                                        ),
-                                      ),
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          gradient: LinearGradient(
-                                            begin: Alignment.centerLeft,
-                                            end: Alignment.centerRight,
-                                            colors: [
-                                              Colors.blue.shade400,
-                                              Colors.blue.shade600,
-                                            ],
+                                  if (_currentStep > 0)
+                                    Expanded(
+                                      child: OutlinedButton(
+                                        onPressed: _previousStep,
+                                        style: OutlinedButton.styleFrom(
+                                          padding: const EdgeInsets.symmetric(vertical: 16),
+                                          side: BorderSide(
+                                            color: Colors.grey.shade300,
+                                            width: 1.5,
                                           ),
-                                          borderRadius: BorderRadius.circular(12),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
                                         ),
-                                        child: _isLoading
-                                            ? const Center(
-                                                child: Padding(
-                                                  padding: EdgeInsets.all(16.0),
-                                                  child: SizedBox(
-                                                    height: 24,
-                                                    width: 24,
-                                                    child: CircularProgressIndicator(
-                                                      strokeWidth: 2.5,
-                                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                        child: const Text("Back"),
+                                      ),
+                                    ),
+                                  if (_currentStep > 0) const SizedBox(width: 12),
+                                  Expanded(
+                                    child: SizedBox(
+                                      height: 56,
+                                      child: ElevatedButton(
+                                        onPressed: _isLoading ? null : _nextStep,
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.transparent,
+                                          shadowColor: Colors.transparent,
+                                          elevation: 0,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                        ).copyWith(
+                                          backgroundColor: MaterialStateProperty.resolveWith<Color>(
+                                            (Set<MaterialState> states) {
+                                              if (states.contains(MaterialState.disabled)) {
+                                                return Colors.grey.shade300;
+                                              }
+                                              return Colors.transparent;
+                                            },
+                                          ),
+                                        ),
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            gradient: LinearGradient(
+                                              begin: Alignment.centerLeft,
+                                              end: Alignment.centerRight,
+                                              colors: [
+                                                Colors.blue.shade400,
+                                                Colors.blue.shade600,
+                                              ],
+                                            ),
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          child: _isLoading
+                                              ? const Center(
+                                                  child: Padding(
+                                                    padding: EdgeInsets.all(16.0),
+                                                    child: SizedBox(
+                                                      height: 24,
+                                                      width: 24,
+                                                      child: CircularProgressIndicator(
+                                                        strokeWidth: 2.5,
+                                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                )
+                                              : Center(
+                                                  child: Padding(
+                                                    padding: const EdgeInsets.symmetric(vertical: 16.0),
+                                                    child: Text(
+                                                      _currentStep == _totalSteps - 1 ? "Submit" : "Continue",
+                                                      style: const TextStyle(
+                                                        fontSize: 16,
+                                                        fontWeight: FontWeight.bold,
+                                                        color: Colors.white,
+                                                        letterSpacing: 0.5,
+                                                      ),
                                                     ),
                                                   ),
                                                 ),
-                                              )
-                                            : Center(
-                                                child: Padding(
-                                                  padding: const EdgeInsets.symmetric(vertical: 16.0),
-                                                  child: Text(
-                                                    _currentStep == _totalSteps - 1 ? "Submit" : "Continue",
-                                                    style: const TextStyle(
-                                                      fontSize: 16,
-                                                      fontWeight: FontWeight.bold,
-                                                      color: Colors.white,
-                                                      letterSpacing: 0.5,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
+                                        ),
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(height: 24),
-
-                                  // Divider with "or"
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Divider(
-                                          color: Colors.grey.shade300,
-                                          thickness: 1,
-                                        ),
-                                      ),
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                                        child: Text(
-                                          "or",
-                                          style: TextStyle(
-                                            color: Colors.grey.shade500,
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                      ),
-                                      Expanded(
-                                        child: Divider(
-                                          color: Colors.grey.shade300,
-                                          thickness: 1,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 24),
-
-                                  // Navigation Buttons
-                                  Row(
-                                    children: [
-                                      // Activate Account Button
-                                      Expanded(
-                                        child: OutlinedButton(
-                                          onPressed: () {
-                                            Navigator.pushReplacement(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) => const OtpPage(),
-                                              ),
-                                            );
-                                          },
-                                          style: OutlinedButton.styleFrom(
-                                            padding: const EdgeInsets.symmetric(vertical: 14),
-                                            side: BorderSide(
-                                              color: Colors.grey.shade300,
-                                              width: 1.5,
-                                            ),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(12),
-                                            ),
-                                            backgroundColor: Colors.white,
-                                          ),
-                                          child: Row(
-                                            mainAxisAlignment: MainAxisAlignment.center,
-                                            children: [
-                                              Icon(
-                                                Icons.verified_user_outlined,
-                                                size: 20,
-                                                color: Colors.grey.shade700,
-                                              ),
-                                              const SizedBox(width: 8),
-                                              Text(
-                                                "Activate Account",
-                                                style: TextStyle(
-                                                  fontSize: 15,
-                                                  fontWeight: FontWeight.w500,
-                                                  color: Colors.grey.shade800,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      // Log In Button
-                                      Expanded(
-                                        child: OutlinedButton(
-                                          onPressed: () {
-                                            Navigator.pushReplacement(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) => const LoginScreen(),
-                                              ),
-                                            );
-                                          },
-                                          style: OutlinedButton.styleFrom(
-                                            padding: const EdgeInsets.symmetric(vertical: 14),
-                                            side: BorderSide(
-                                              color: Colors.grey.shade300,
-                                              width: 1.5,
-                                            ),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(12),
-                                            ),
-                                            backgroundColor: Colors.white,
-                                          ),
-                                          child: Row(
-                                            mainAxisAlignment: MainAxisAlignment.center,
-                                            children: [
-                                              Icon(
-                                                Icons.login_outlined,
-                                                size: 20,
-                                                color: Colors.grey.shade700,
-                                              ),
-                                              const SizedBox(width: 8),
-                                              Text(
-                                                "Log In",
-                                                style: TextStyle(
-                                                  fontSize: 15,
-                                                  fontWeight: FontWeight.w500,
-                                                  color: Colors.grey.shade800,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
                                 ],
                               ),
-                            ),
+                            ],
                           ],
                         ),
                       ),
