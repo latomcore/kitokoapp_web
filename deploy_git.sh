@@ -32,6 +32,13 @@ fi
 # Navigate to repo directory
 cd $REPO_DIR
 
+# Check for local changes and handle them
+if ! git diff-index --quiet HEAD --; then
+    echo "⚠️  Warning: There are uncommitted changes in the repository"
+    echo "   Stashing local changes to allow pull..."
+    git stash push -m "Stashed before deployment $(date +%Y%m%d_%H%M%S)"
+fi
+
 # Pull latest changes
 echo "📥 Pulling latest changes from GitHub..."
 git pull origin main || git pull origin master
