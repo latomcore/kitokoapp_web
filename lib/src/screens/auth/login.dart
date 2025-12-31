@@ -19,6 +19,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _pinController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  final FocusNode _phoneFocusNode = FocusNode();
+  final FocusNode _pinFocusNode = FocusNode();
   Country? _selectedCountry;
   String? _errorMessage;
   bool _isLoading = false;
@@ -45,6 +47,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   void dispose() {
     _phoneController.dispose();
     _pinController.dispose();
+    _phoneFocusNode.dispose();
+    _pinFocusNode.dispose();
     _fadeController.dispose();
     super.dispose();
   }
@@ -133,11 +137,13 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                       child: Container(
                         color: Colors.grey.shade50,
                         child: Center(
-                          child: SingleChildScrollView(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: isWideScreen ? 48.0 : 24.0,
-                              vertical: 32.0,
-                            ),
+                                    child: SingleChildScrollView(
+                                      padding: EdgeInsets.only(
+                                        left: isWideScreen ? 48.0 : 24.0,
+                                        right: isWideScreen ? 48.0 : 24.0,
+                                        top: 32.0,
+                                        bottom: MediaQuery.of(context).viewInsets.bottom + 32.0,
+                                      ),
                             child: FadeTransition(
                               opacity: _fadeAnimation,
                               child: ConstrainedBox(
@@ -276,8 +282,34 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                           Expanded(
                                             child: TextFormField(
                                               controller: _phoneController,
-                                              keyboardType: TextInputType.number,
+                                              focusNode: _phoneFocusNode,
+                                              keyboardType: TextInputType.phone,
+                                              textInputAction: TextInputAction.next,
                                               maxLength: 10,
+                                              onFieldSubmitted: (_) {
+                                                FocusScope.of(context).requestFocus(_pinFocusNode);
+                                              },
+                                              onChanged: (value) {
+                                                // Clear error when user starts typing
+                                                if (_errorMessage != null) {
+                                                  setState(() {
+                                                    _errorMessage = null;
+                                                  });
+                                                }
+                                              },
+                                              validator: (value) {
+                                                if (value == null || value.trim().isEmpty) {
+                                                  return 'Phone number is required';
+                                                }
+                                                final digitsOnly = value.replaceAll(RegExp(r'[^0-9]'), '');
+                                                if (digitsOnly.length < 9) {
+                                                  return 'Phone number must be at least 9 digits';
+                                                }
+                                                if (digitsOnly.length > 10) {
+                                                  return 'Phone number must not exceed 10 digits';
+                                                }
+                                                return null;
+                                              },
                                               style: TextStyle(
                                                 fontSize: 16,
                                                 color: Colors.grey.shade800,
@@ -309,6 +341,20 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                                   borderRadius: BorderRadius.circular(12),
                                                   borderSide: BorderSide(
                                                     color: Colors.blue.shade600,
+                                                    width: 2,
+                                                  ),
+                                                ),
+                                                errorBorder: OutlineInputBorder(
+                                                  borderRadius: BorderRadius.circular(12),
+                                                  borderSide: BorderSide(
+                                                    color: Colors.red.shade400,
+                                                    width: 1.5,
+                                                  ),
+                                                ),
+                                                focusedErrorBorder: OutlineInputBorder(
+                                                  borderRadius: BorderRadius.circular(12),
+                                                  borderSide: BorderSide(
+                                                    color: Colors.red.shade600,
                                                     width: 2,
                                                   ),
                                                 ),
@@ -587,19 +633,24 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                                     ),
                                                     child: Row(
                                                       mainAxisAlignment: MainAxisAlignment.center,
+                                                      mainAxisSize: MainAxisSize.min,
                                                       children: [
                                                         Icon(
                                                           Icons.verified_user_outlined,
-                                                          size: 20,
+                                                          size: 18,
                                                           color: Colors.grey.shade700,
                                                         ),
-                                                        const SizedBox(width: 8),
-                                                        Text(
-                                                          "Activate Account",
-                                                          style: TextStyle(
-                                                            fontSize: 15,
-                                                            fontWeight: FontWeight.w500,
-                                                            color: Colors.grey.shade800,
+                                                        const SizedBox(width: 6),
+                                                        Flexible(
+                                                          child: Text(
+                                                            "Activate Account",
+                                                            style: TextStyle(
+                                                              fontSize: 13,
+                                                              fontWeight: FontWeight.w500,
+                                                              color: Colors.grey.shade800,
+                                                            ),
+                                                            overflow: TextOverflow.ellipsis,
+                                                            textAlign: TextAlign.center,
                                                           ),
                                                         ),
                                                       ],
@@ -631,19 +682,24 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                                     ),
                                                     child: Row(
                                                       mainAxisAlignment: MainAxisAlignment.center,
+                                                      mainAxisSize: MainAxisSize.min,
                                                       children: [
                                                         Icon(
                                                           Icons.person_add_outlined,
-                                                          size: 20,
+                                                          size: 18,
                                                           color: Colors.grey.shade700,
                                                         ),
-                                                        const SizedBox(width: 8),
-                                                        Text(
-                                                          "Self Register",
-                                                          style: TextStyle(
-                                                            fontSize: 15,
-                                                            fontWeight: FontWeight.w500,
-                                                            color: Colors.grey.shade800,
+                                                        const SizedBox(width: 6),
+                                                        Flexible(
+                                                          child: Text(
+                                                            "Self Register",
+                                                            style: TextStyle(
+                                                              fontSize: 13,
+                                                              fontWeight: FontWeight.w500,
+                                                              color: Colors.grey.shade800,
+                                                            ),
+                                                            overflow: TextOverflow.ellipsis,
+                                                            textAlign: TextAlign.center,
                                                           ),
                                                         ),
                                                       ],

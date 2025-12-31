@@ -16,6 +16,8 @@ class _OtpPageState extends State<OtpPage> with SingleTickerProviderStateMixin {
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _otpController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  final FocusNode _phoneFocusNode = FocusNode();
+  final FocusNode _otpFocusNode = FocusNode();
   Country? _selectedCountry;
   bool _isLoading = false;
   String? _errorMessage;
@@ -41,6 +43,8 @@ class _OtpPageState extends State<OtpPage> with SingleTickerProviderStateMixin {
   void dispose() {
     _phoneController.dispose();
     _otpController.dispose();
+    _phoneFocusNode.dispose();
+    _otpFocusNode.dispose();
     _fadeController.dispose();
     super.dispose();
   }
@@ -129,9 +133,11 @@ class _OtpPageState extends State<OtpPage> with SingleTickerProviderStateMixin {
                         color: Colors.grey.shade50,
                         child: Center(
                           child: SingleChildScrollView(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: isWideScreen ? 48.0 : 24.0,
-                              vertical: 32.0,
+                            padding: EdgeInsets.only(
+                              left: isWideScreen ? 48.0 : 24.0,
+                              right: isWideScreen ? 48.0 : 24.0,
+                              top: 32.0,
+                              bottom: MediaQuery.of(context).viewInsets.bottom + 32.0,
                             ),
                             child: FadeTransition(
                               opacity: _fadeAnimation,
@@ -271,8 +277,34 @@ class _OtpPageState extends State<OtpPage> with SingleTickerProviderStateMixin {
                                           Expanded(
                                             child: TextFormField(
                                               controller: _phoneController,
+                                              focusNode: _phoneFocusNode,
                                               keyboardType: TextInputType.phone,
+                                              textInputAction: TextInputAction.next,
                                               maxLength: 10,
+                                              onFieldSubmitted: (_) {
+                                                FocusScope.of(context).requestFocus(_otpFocusNode);
+                                              },
+                                              onChanged: (value) {
+                                                // Clear error when user starts typing
+                                                if (_errorMessage != null) {
+                                                  setState(() {
+                                                    _errorMessage = null;
+                                                  });
+                                                }
+                                              },
+                                              validator: (value) {
+                                                if (value == null || value.trim().isEmpty) {
+                                                  return 'Phone number is required';
+                                                }
+                                                final digitsOnly = value.replaceAll(RegExp(r'[^0-9]'), '');
+                                                if (digitsOnly.length < 9) {
+                                                  return 'Phone number must be at least 9 digits';
+                                                }
+                                                if (digitsOnly.length > 10) {
+                                                  return 'Phone number must not exceed 10 digits';
+                                                }
+                                                return null;
+                                              },
                                               style: TextStyle(
                                                 fontSize: 16,
                                                 color: Colors.grey.shade800,
@@ -280,7 +312,7 @@ class _OtpPageState extends State<OtpPage> with SingleTickerProviderStateMixin {
                                               ),
                                               decoration: InputDecoration(
                                                 counterText: "",
-                                                hintText: "Enter phone number",
+                                                hintText: "783200510",
                                                 hintStyle: TextStyle(
                                                   color: Colors.grey.shade400,
                                                 ),
@@ -304,6 +336,20 @@ class _OtpPageState extends State<OtpPage> with SingleTickerProviderStateMixin {
                                                   borderRadius: BorderRadius.circular(12),
                                                   borderSide: BorderSide(
                                                     color: Colors.blue.shade600,
+                                                    width: 2,
+                                                  ),
+                                                ),
+                                                errorBorder: OutlineInputBorder(
+                                                  borderRadius: BorderRadius.circular(12),
+                                                  borderSide: BorderSide(
+                                                    color: Colors.red.shade400,
+                                                    width: 1.5,
+                                                  ),
+                                                ),
+                                                focusedErrorBorder: OutlineInputBorder(
+                                                  borderRadius: BorderRadius.circular(12),
+                                                  borderSide: BorderSide(
+                                                    color: Colors.red.shade600,
                                                     width: 2,
                                                   ),
                                                 ),
@@ -335,8 +381,32 @@ class _OtpPageState extends State<OtpPage> with SingleTickerProviderStateMixin {
                                       const SizedBox(height: 12),
                                       TextFormField(
                                         controller: _otpController,
+                                        focusNode: _otpFocusNode,
                                         keyboardType: TextInputType.number,
+                                        textInputAction: TextInputAction.done,
                                         maxLength: 6,
+                                        onFieldSubmitted: (_) {
+                                          if (_formKey.currentState?.validate() ?? false) {
+                                            _handleActivation();
+                                          }
+                                        },
+                                        onChanged: (value) {
+                                          // Clear error when user starts typing
+                                          if (_errorMessage != null) {
+                                            setState(() {
+                                              _errorMessage = null;
+                                            });
+                                          }
+                                        },
+                                        validator: (value) {
+                                          if (value == null || value.trim().isEmpty) {
+                                            return 'OTP is required';
+                                          }
+                                          if (value.length != 6) {
+                                            return 'OTP must be 6 digits';
+                                          }
+                                          return null;
+                                        },
                                         style: TextStyle(
                                           fontSize: 18,
                                           color: Colors.grey.shade800,
@@ -345,7 +415,7 @@ class _OtpPageState extends State<OtpPage> with SingleTickerProviderStateMixin {
                                         ),
                                         decoration: InputDecoration(
                                           counterText: "",
-                                          hintText: "Enter OTP",
+                                          hintText: "••••••",
                                           hintStyle: TextStyle(
                                             color: Colors.grey.shade400,
                                             letterSpacing: 4,
@@ -370,6 +440,20 @@ class _OtpPageState extends State<OtpPage> with SingleTickerProviderStateMixin {
                                             borderRadius: BorderRadius.circular(12),
                                             borderSide: BorderSide(
                                               color: Colors.blue.shade600,
+                                              width: 2,
+                                            ),
+                                          ),
+                                          errorBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(12),
+                                            borderSide: BorderSide(
+                                              color: Colors.red.shade400,
+                                              width: 1.5,
+                                            ),
+                                          ),
+                                          focusedErrorBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(12),
+                                            borderSide: BorderSide(
+                                              color: Colors.red.shade600,
                                               width: 2,
                                             ),
                                           ),
@@ -568,19 +652,24 @@ class _OtpPageState extends State<OtpPage> with SingleTickerProviderStateMixin {
                                                     ),
                                                     child: Row(
                                                       mainAxisAlignment: MainAxisAlignment.center,
+                                                      mainAxisSize: MainAxisSize.min,
                                                       children: [
                                                         Icon(
                                                           Icons.login_outlined,
-                                                          size: 20,
+                                                          size: 18,
                                                           color: Colors.grey.shade700,
                                                         ),
-                                                        const SizedBox(width: 8),
-                                                        Text(
-                                                          "Log In",
-                                                          style: TextStyle(
-                                                            fontSize: 15,
-                                                            fontWeight: FontWeight.w500,
-                                                            color: Colors.grey.shade800,
+                                                        const SizedBox(width: 6),
+                                                        Flexible(
+                                                          child: Text(
+                                                            "Log In",
+                                                            style: TextStyle(
+                                                              fontSize: 13,
+                                                              fontWeight: FontWeight.w500,
+                                                              color: Colors.grey.shade800,
+                                                            ),
+                                                            overflow: TextOverflow.ellipsis,
+                                                            textAlign: TextAlign.center,
                                                           ),
                                                         ),
                                                       ],
@@ -612,19 +701,24 @@ class _OtpPageState extends State<OtpPage> with SingleTickerProviderStateMixin {
                                                     ),
                                                     child: Row(
                                                       mainAxisAlignment: MainAxisAlignment.center,
+                                                      mainAxisSize: MainAxisSize.min,
                                                       children: [
                                                         Icon(
                                                           Icons.person_add_outlined,
-                                                          size: 20,
+                                                          size: 18,
                                                           color: Colors.grey.shade700,
                                                         ),
-                                                        const SizedBox(width: 8),
-                                                        Text(
-                                                          "Self Register",
-                                                          style: TextStyle(
-                                                            fontSize: 15,
-                                                            fontWeight: FontWeight.w500,
-                                                            color: Colors.grey.shade800,
+                                                        const SizedBox(width: 6),
+                                                        Flexible(
+                                                          child: Text(
+                                                            "Self Register",
+                                                            style: TextStyle(
+                                                              fontSize: 13,
+                                                              fontWeight: FontWeight.w500,
+                                                              color: Colors.grey.shade800,
+                                                            ),
+                                                            overflow: TextOverflow.ellipsis,
+                                                            textAlign: TextAlign.center,
                                                           ),
                                                         ),
                                                       ],

@@ -36,6 +36,12 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
   final GlobalKey<FormState> _step3FormKey = GlobalKey<FormState>();
   final GlobalKey<FormState> _step4FormKey = GlobalKey<FormState>();
   
+  // Focus nodes for keyboard navigation
+  final FocusNode _mobileNumberFocusNode = FocusNode();
+  final FocusNode _emailFocusNode = FocusNode();
+  final FocusNode _otpFocusNode = FocusNode();
+  final FocusNode _pinFocusNode = FocusNode();
+  
   // State variables
   Country? _selectedCountry;
   String? _identificationType;
@@ -79,6 +85,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
     _employeeCodeController.dispose();
     _otpController.dispose();
     _pinController.dispose();
+    _mobileNumberFocusNode.dispose();
+    _emailFocusNode.dispose();
+    _otpFocusNode.dispose();
+    _pinFocusNode.dispose();
     _fadeController.dispose();
     super.dispose();
   }
@@ -522,8 +532,33 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
               Expanded(
                 child: TextFormField(
                   controller: _mobileNumberController,
-                  keyboardType: TextInputType.number,
+                  focusNode: _mobileNumberFocusNode,
+                  keyboardType: TextInputType.phone,
+                  textInputAction: TextInputAction.next,
                   maxLength: 10,
+                  onFieldSubmitted: (_) {
+                    FocusScope.of(context).requestFocus(_emailFocusNode);
+                  },
+                  onChanged: (value) {
+                    if (_errorMessage != null) {
+                      setState(() {
+                        _errorMessage = null;
+                      });
+                    }
+                  },
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Mobile number is required';
+                    }
+                    final digitsOnly = value.replaceAll(RegExp(r'[^0-9]'), '');
+                    if (digitsOnly.length < 9) {
+                      return 'Phone number must be at least 9 digits';
+                    }
+                    if (digitsOnly.length > 10) {
+                      return 'Phone number must not exceed 10 digits';
+                    }
+                    return null;
+                  },
                   style: TextStyle(
                     fontSize: 16,
                     color: Colors.grey.shade800,
@@ -547,18 +582,17 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: Colors.blue.shade600, width: 2),
                     ),
+                    errorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.red.shade400, width: 1.5),
+                    ),
+                    focusedErrorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.red.shade600, width: 2),
+                    ),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
                     prefixIcon: Icon(Icons.phone_outlined, color: Colors.grey.shade600),
                   ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Mobile number is required';
-                    }
-                    if (value.length < 9) {
-                      return 'Please enter a valid mobile number';
-                    }
-                    return null;
-                  },
                 ),
               ),
             ],
@@ -572,11 +606,13 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
             hint: "Enter your email address",
             icon: Icons.email_outlined,
             keyboardType: TextInputType.emailAddress,
+            focusNode: _emailFocusNode,
+            textInputAction: TextInputAction.next,
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
                 return 'Email is required';
               }
-              if (!value.contains('@') || !value.contains('.')) {
+              if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
                 return 'Please enter a valid email address';
               }
               return null;
@@ -816,6 +852,13 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
               icon: Icons.lock_outline,
               keyboardType: TextInputType.number,
               maxLength: 6,
+              focusNode: _otpFocusNode,
+              textInputAction: TextInputAction.next,
+              onFieldSubmitted: () {
+                if (!_isOtpVerified) {
+                  _verifyOtp();
+                }
+              },
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
                   return 'OTP is required';
@@ -855,6 +898,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
               keyboardType: TextInputType.number,
               maxLength: 4,
               obscureText: _obscurePin,
+              focusNode: _pinFocusNode,
+              textInputAction: TextInputAction.done,
               suffixIcon: IconButton(
                 icon: Icon(
                   _obscurePin ? Icons.visibility_outlined : Icons.visibility_off_outlined,
@@ -892,6 +937,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
     bool obscureText = false,
     Widget? suffixIcon,
     String? Function(String?)? validator,
+    FocusNode? focusNode,
+    TextInputAction? textInputAction,
+    VoidCallback? onFieldSubmitted,
+    ValueChanged<String>? onChanged,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -907,9 +956,19 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
         const SizedBox(height: 12),
         TextFormField(
           controller: controller,
+          focusNode: focusNode,
           keyboardType: keyboardType,
+          textInputAction: textInputAction,
           maxLength: maxLength,
           obscureText: obscureText,
+          onFieldSubmitted: onFieldSubmitted != null ? (_) => onFieldSubmitted() : null,
+          onChanged: onChanged ?? (value) {
+            if (_errorMessage != null) {
+              setState(() {
+                _errorMessage = null;
+              });
+            }
+          },
           style: TextStyle(
             fontSize: 16,
             color: Colors.grey.shade800,
@@ -936,6 +995,14 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(color: Colors.blue.shade600, width: 2),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.red.shade400, width: 1.5),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.red.shade600, width: 2),
             ),
             contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
             prefixIcon: Icon(icon, color: Colors.grey.shade600),
@@ -1006,9 +1073,11 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
                   child: FadeTransition(
                     opacity: _fadeAnimation,
                     child: SingleChildScrollView(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: isWideScreen ? 48.0 : 24.0,
-                        vertical: 32.0,
+                      padding: EdgeInsets.only(
+                        left: isWideScreen ? 48.0 : 24.0,
+                        right: isWideScreen ? 48.0 : 24.0,
+                        top: 32.0,
+                        bottom: MediaQuery.of(context).viewInsets.bottom + 32.0,
                       ),
                       child: ConstrainedBox(
                         constraints: BoxConstraints(
@@ -1260,19 +1329,24 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
                                             ),
                                             child: Row(
                                               mainAxisAlignment: MainAxisAlignment.center,
+                                              mainAxisSize: MainAxisSize.min,
                                               children: [
                                                 Icon(
                                                   Icons.verified_user_outlined,
-                                                  size: 20,
+                                                  size: 18,
                                                   color: Colors.grey.shade700,
                                                 ),
-                                                const SizedBox(width: 8),
-                                                Text(
-                                                  "Activate Account",
-                                                  style: TextStyle(
-                                                    fontSize: 15,
-                                                    fontWeight: FontWeight.w500,
-                                                    color: Colors.grey.shade800,
+                                                const SizedBox(width: 6),
+                                                Flexible(
+                                                  child: Text(
+                                                    "Activate Account",
+                                                    style: TextStyle(
+                                                      fontSize: 13,
+                                                      fontWeight: FontWeight.w500,
+                                                      color: Colors.grey.shade800,
+                                                    ),
+                                                    overflow: TextOverflow.ellipsis,
+                                                    textAlign: TextAlign.center,
                                                   ),
                                                 ),
                                               ],
@@ -1304,19 +1378,24 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
                                             ),
                                             child: Row(
                                               mainAxisAlignment: MainAxisAlignment.center,
+                                              mainAxisSize: MainAxisSize.min,
                                               children: [
                                                 Icon(
                                                   Icons.login_outlined,
-                                                  size: 20,
+                                                  size: 18,
                                                   color: Colors.grey.shade700,
                                                 ),
-                                                const SizedBox(width: 8),
-                                                Text(
-                                                  "Log In",
-                                                  style: TextStyle(
-                                                    fontSize: 15,
-                                                    fontWeight: FontWeight.w500,
-                                                    color: Colors.grey.shade800,
+                                                const SizedBox(width: 6),
+                                                Flexible(
+                                                  child: Text(
+                                                    "Log In",
+                                                    style: TextStyle(
+                                                      fontSize: 13,
+                                                      fontWeight: FontWeight.w500,
+                                                      color: Colors.grey.shade800,
+                                                    ),
+                                                    overflow: TextOverflow.ellipsis,
+                                                    textAlign: TextAlign.center,
                                                   ),
                                                 ),
                                               ],
