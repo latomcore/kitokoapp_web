@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:kitokopay/service/token_storage.dart';
 import 'package:get/get.dart';
 import 'package:kitokopay/config/app_config.dart';
+import 'package:kitokopay/service/token_refresh_service.dart'; // PHASE 3: Token expiration
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 
 class ApiClient extends GetConnect {
@@ -133,6 +134,24 @@ class ApiClient extends GetConnect {
 
   Future<Map<String, dynamic>> coreRequest(
       String token, Map<String, dynamic> coreRequest, String command) async {
+    // PHASE 3: Check token expiration before making request
+    if (TokenRefreshService.isTokenExpired(token)) {
+      if (kDebugMode) {
+        debugPrint('❌ Token expired, cannot make API request');
+      }
+      
+      // Force re-authentication
+      await TokenRefreshService.forceReAuthentication();
+      
+      return {
+        "statusCode": 401, // Unauthorized
+        "body": jsonEncode({
+          "status": "error",
+          "message": "Token expired. Please login again.",
+        }),
+      };
+    }
+    
     var headers = {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer $token',
@@ -145,6 +164,15 @@ class ApiClient extends GetConnect {
         headers: headers,
         body: jsonEncode(coreRequest),
       );
+
+      // PHASE 3: Check if response indicates token expiration
+      if (response.statusCode == 401) {
+        if (kDebugMode) {
+          debugPrint('⚠️ Server returned 401, token may be expired');
+        }
+        // Token might be expired on server side, remove it
+        await TokenRefreshService.forceReAuthentication();
+      }
 
       // Return the status code and response body
       return {

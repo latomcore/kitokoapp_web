@@ -1,4 +1,5 @@
 import 'package:kitokopay/service/secure_storage_service.dart';
+import 'package:kitokopay/service/token_refresh_service.dart'; // PHASE 3: Token expiration
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb, debugPrint;
 
@@ -13,6 +14,9 @@ import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb, debugPrint;
 class TokenStorage {
   final SecureStorageService _secureStorage = SecureStorageService();
   static const _tokenKey = 'auth_token'; // Keep for migration/backup
+  
+  // Cache for refresh check to reduce overhead
+  static DateTime? _lastRefreshCheck;
 
   /// Check if we should use secure storage (mobile) or SharedPreferences (web)
   bool get _useSecureStorage => !kIsWeb; // Use secure storage only on mobile
@@ -60,49 +64,63 @@ class TokenStorage {
   /// 
   /// WEB: Reads directly from SharedPreferences
   /// MOBILE: Reads from secure storage, falls back to SharedPreferences
-  /// Returns null if token doesn't exist.
+  /// 
+  /// PHASE 3: Checks token expiration and removes expired tokens.
+  /// Returns null if token doesn't exist or is expired.
   Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
+    String? token;
     
     if (_useSecureStorage) {
       // Mobile: Try secure storage first, fallback to SharedPreferences
       try {
-        final token = await _secureStorage.getAuthToken();
+        token = await _secureStorage.getAuthToken();
         
-        if (token != null && token.isNotEmpty) {
-          // Don't check expiration - let the server handle it
-          // The 1-hour expiration was causing premature token removal
-          return token;
-        }
-        
-        // Fallback: Try SharedPreferences (for migration/revert support)
-        if (kDebugMode) {
-          debugPrint('⚠️ Token not found in secure storage, checking SharedPreferences backup...');
-        }
-        final backupToken = prefs.getString(_tokenKey);
-        
-        if (backupToken != null && backupToken.isNotEmpty) {
-          // Migrate to secure storage
+        if (token == null || token.isEmpty) {
+          // Fallback: Try SharedPreferences (for migration/revert support)
           if (kDebugMode) {
-            debugPrint('🔄 Migrating token from SharedPreferences to secure storage...');
+            debugPrint('⚠️ Token not found in secure storage, checking SharedPreferences backup...');
           }
-          await setToken(backupToken);
-          return backupToken;
+          token = prefs.getString(_tokenKey);
+          
+          if (token != null && token.isNotEmpty) {
+            // Migrate to secure storage
+            if (kDebugMode) {
+              debugPrint('🔄 Migrating token from SharedPreferences to secure storage...');
+            }
+            await setToken(token);
+          }
         }
-        
-        return null;
       } catch (e) {
         if (kDebugMode) {
           debugPrint('❌ Failed to retrieve token from secure storage: $e');
           debugPrint('   Falling back to SharedPreferences...');
         }
         // Fallback to SharedPreferences if secure storage fails
-        return prefs.getString(_tokenKey);
+        token = prefs.getString(_tokenKey);
       }
     } else {
       // Web: Read directly from SharedPreferences
-      return prefs.getString(_tokenKey);
+      token = prefs.getString(_tokenKey);
     }
+    
+    // PHASE 3: Check token expiration (only if token exists)
+    if (token != null && token.isNotEmpty) {
+      final isExpired = TokenRefreshService.isTokenExpired(token);
+      
+      if (isExpired) {
+        if (kDebugMode) {
+          debugPrint('⚠️ Token expired, removing...');
+        }
+        await removeToken();
+        return null;
+      }
+      
+      // Removed refresh threshold check to prevent recursion
+      // shouldRefreshToken() calls getToken() which would cause infinite loop
+    }
+    
+    return token;
   }
 
   /// Remove token from secure storage (mobile) or SharedPreferences (web)
