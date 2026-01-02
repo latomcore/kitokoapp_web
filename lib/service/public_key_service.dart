@@ -124,14 +124,16 @@ class PublicKeyService {
         } catch (e) {
           if (kDebugMode) {
             debugPrint('❌ Failed to parse JSON response: $e');
-            debugPrint('Response body: ${responseBody.substring(0, responseBody.length > 500 ? 500 : responseBody.length)}');
+            // Don't log full response body (may contain sensitive data)
+            debugPrint('Response body: [Length: ${responseBody.length} chars]');
           }
           return null;
         }
       } else {
         if (kDebugMode) {
           debugPrint('❌ Failed to fetch PUBLIC_KEY. Status: ${response.statusCode}');
-          debugPrint('Response: ${response.body}');
+          // Don't log full response body (may contain sensitive data)
+          debugPrint('Response: [Length: ${response.body.length} chars]');
         }
         return null;
       }

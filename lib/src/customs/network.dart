@@ -52,8 +52,33 @@ class NetworkUtil {
       );
     }
 
-    (dio.httpClientAdapter as IOHttpClientAdapter).createHttpClient =
-        () => HttpClient()..badCertificateCallback = (_, __, ___) => true;
+    // SSL Certificate Validation - SECURITY FIX
+    // Removed dangerous certificate bypass for production security
+    // Certificate validation is now properly enforced
+    // Only bypass in development with explicit flag: --dart-define=ALLOW_INSECURE_SSL=true
+    (dio.httpClientAdapter as IOHttpClientAdapter).createHttpClient = () {
+      final client = HttpClient();
+      
+      // Check if insecure SSL is explicitly allowed (development only)
+      final allowInsecure = const bool.fromEnvironment('ALLOW_INSECURE_SSL', defaultValue: false);
+      
+      if (allowInsecure && kDebugMode) {
+        // Only bypass in development with explicit flag
+        if (kDebugMode) {
+          debugPrint('⚠️ WARNING: SSL certificate validation is DISABLED (development mode only)');
+          debugPrint('⚠️ This should NEVER be enabled in production builds!');
+        }
+        client.badCertificateCallback = (_, __, ___) => true;
+      } else {
+        // Production: Certificate validation is enabled by default
+        // This prevents MITM attacks
+        if (kDebugMode) {
+          debugPrint('✅ SSL certificate validation ENABLED (secure)');
+        }
+      }
+      
+      return client;
+    };
     return dio;
   }
 
@@ -79,10 +104,13 @@ class NetworkUtil {
     } on TimeoutException catch (_) {
       throw Failure(message: 'Session timeout');
     } on DioException catch (err) {
-      _logger
-        ..d('Error: $err')
-        ..i('${err.response?.statusCode}')
-        ..i('Error: ${err.response?.data}');
+      // Log errors only in debug mode, sanitized
+      if (kDebugMode) {
+        _logger
+          ..d('Error Type: ${err.runtimeType}')
+          ..i('Status Code: ${err.response?.statusCode}');
+        // Don't log full error response (may contain sensitive data)
+      }
 
       if (err.response?.statusCode == 401) {
         throw Failure(
@@ -134,7 +162,11 @@ class NetworkUtil {
 
       final responseBody = response.data as Map<String, dynamic>;
 
-      Logger().i(responseBody);
+      // Log response only in debug mode, sanitized
+      if (kDebugMode) {
+        Logger().i('Response received: [Length: ${responseBody.length} entries]');
+        // Don't log full response body (may contain sensitive data)
+      }
 
       if (responseBody.isEmpty) {
         throw Failure(message: 'An error occured, please try again later');
@@ -146,10 +178,13 @@ class NetworkUtil {
     } on TimeoutException catch (_) {
       throw Failure(message: 'Session timeout');
     } on DioException catch (err) {
-      _logger
-        ..d('Error: $err')
-        ..i('${err.response?.statusCode}')
-        ..i('Error: ${err.response?.data}');
+      // Log errors only in debug mode, sanitized
+      if (kDebugMode) {
+        _logger
+          ..d('Error Type: ${err.runtimeType}')
+          ..i('Status Code: ${err.response?.statusCode}');
+        // Don't log full error response (may contain sensitive data)
+      }
 
       if (err.response?.statusCode == 401) {
         throw Failure(
@@ -210,7 +245,11 @@ class NetworkUtil {
 
       final responseBody = response.data as Map<String, dynamic>;
 
-      Logger().i(responseBody);
+      // Log response only in debug mode, sanitized
+      if (kDebugMode) {
+        Logger().i('Response received: [Length: ${responseBody.length} entries]');
+        // Don't log full response body (may contain sensitive data)
+      }
 
       if (responseBody.isEmpty) {
         throw Failure(message: 'An error occured, please try again later');
@@ -222,10 +261,13 @@ class NetworkUtil {
     } on TimeoutException catch (_) {
       throw Failure(message: 'Session timeout');
     } on DioException catch (err) {
-      _logger
-        ..d('Error: $err')
-        ..i('${err.response?.statusCode}')
-        ..i('Error: ${err.response?.data}');
+      // Log errors only in debug mode, sanitized
+      if (kDebugMode) {
+        _logger
+          ..d('Error Type: ${err.runtimeType}')
+          ..i('Status Code: ${err.response?.statusCode}');
+        // Don't log full error response (may contain sensitive data)
+      }
 
       if (err.response?.statusCode == 401) {
         throw Failure(
@@ -292,7 +334,11 @@ class NetworkUtil {
 
       final responseBody = response.data as Map<String, dynamic>;
 
-      Logger().i(responseBody);
+      // Log response only in debug mode, sanitized
+      if (kDebugMode) {
+        Logger().i('Response received: [Length: ${responseBody.length} entries]');
+        // Don't log full response body (may contain sensitive data)
+      }
 
       if (responseBody.isEmpty) {
         throw Failure(message: 'An error occured, please try again later');
@@ -304,10 +350,13 @@ class NetworkUtil {
     } on TimeoutException catch (_) {
       throw Failure(message: 'Session timeout');
     } on DioException catch (err) {
-      _logger
-        ..d('Error: $err')
-        ..i('${err.response?.statusCode}')
-        ..i('Error: ${err.response?.data}');
+      // Log errors only in debug mode, sanitized
+      if (kDebugMode) {
+        _logger
+          ..d('Error Type: ${err.runtimeType}')
+          ..i('Status Code: ${err.response?.statusCode}');
+        // Don't log full error response (may contain sensitive data)
+      }
 
       if (err.response?.statusCode == 401) {
         throw Failure(

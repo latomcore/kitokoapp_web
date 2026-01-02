@@ -218,14 +218,14 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
       // For now, using getCustomer as a placeholder
       ElmsSSL elmsSSL = ElmsSSL();
       String result = await elmsSSL.getCustomer(fullPhoneNumber);
-      
+
       Map<String, dynamic> resultMap = jsonDecode(result);
       if (resultMap['status'] == 'success') {
         if (mounted) {
-          Navigator.pushReplacement(
-            context,
+        Navigator.pushReplacement(
+          context,
             MaterialPageRoute(builder: (context) => const LoginScreen()),
-          );
+        );
         }
       } else {
         setState(() {
@@ -238,7 +238,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
       });
     } finally {
       if (mounted) {
-        setState(() {
+      setState(() {
           _isLoading = false;
         });
       }
@@ -290,7 +290,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
           
           return Expanded(
             child: Row(
-              children: [
+            children: [
                 Expanded(
                   child: Container(
                     height: 3,
@@ -325,7 +325,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
                   ),
                 ),
                 if (index < _totalSteps - 1)
-                  Expanded(
+              Expanded(
                     child: Container(
                       height: 3,
                       decoration: BoxDecoration(
@@ -361,7 +361,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
           bool isCompleted = index < _currentStep;
           
           return Expanded(
-            child: Center(
+                child: Center(
               child: Text(
                 labels[index],
                 style: TextStyle(
@@ -400,9 +400,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
   Widget _buildStep1PersonalInfo() {
     return Form(
       key: _step1FormKey,
-      child: Column(
+                      child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
+                        children: [
           Text(
             "Enter your personal details:",
             style: TextStyle(
@@ -463,9 +463,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
         children: [
           Text(
             "Enter your contact and identification details:",
-            style: TextStyle(
+                            style: TextStyle(
               fontSize: 18,
-              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.bold,
               color: Colors.grey.shade900,
             ),
           ),
@@ -474,8 +474,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
           // Mobile Number
           Text(
             "Mobile Number",
-            style: TextStyle(
-              fontSize: 14,
+                            style: TextStyle(
+                              fontSize: 14,
               fontWeight: FontWeight.w600,
               color: Colors.grey.shade700,
             ),
@@ -483,24 +483,24 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
           const SizedBox(height: 12),
           Row(
             children: [
-              GestureDetector(
-                onTap: () {
-                  showCountryPicker(
-                    context: context,
-                    showPhoneCode: true,
-                    onSelect: (Country country) {
-                      setState(() {
-                        _selectedCountry = country;
-                      });
-                    },
-                  );
-                },
-                child: Container(
+                          GestureDetector(
+                            onTap: () {
+                              showCountryPicker(
+                                context: context,
+                                showPhoneCode: true,
+                                onSelect: (Country country) {
+                                  setState(() {
+                                    _selectedCountry = country;
+                                  });
+                                },
+                              );
+                            },
+                            child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                  decoration: BoxDecoration(
+                              decoration: BoxDecoration(
                     color: Colors.white,
                     border: Border.all(color: Colors.grey.shade300, width: 1.5),
-                    borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withOpacity(0.05),
@@ -508,12 +508,12 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
                         offset: const Offset(0, 2),
                       ),
                     ],
-                  ),
-                  child: Row(
+                              ),
+                              child: Row(
                     mainAxisSize: MainAxisSize.min,
-                    children: [
+                                children: [
                       Text(_selectedCountry?.flagEmoji ?? '🌍', style: const TextStyle(fontSize: 20)),
-                      const SizedBox(width: 8),
+                                  const SizedBox(width: 8),
                       Text(
                         "+${_selectedCountry?.phoneCode ?? '250'}",
                         style: TextStyle(
@@ -524,16 +524,16 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
                       ),
                       const SizedBox(width: 4),
                       Icon(Icons.arrow_drop_down, color: Colors.grey.shade600, size: 20),
-                    ],
-                  ),
-                ),
-              ),
+                                ],
+                              ),
+                            ),
+                          ),
               const SizedBox(width: 12),
               Expanded(
                 child: TextFormField(
                   controller: _mobileNumberController,
                   focusNode: _mobileNumberFocusNode,
-                  keyboardType: TextInputType.phone,
+                            keyboardType: TextInputType.phone,
                   textInputAction: TextInputAction.next,
                   maxLength: 10,
                   onFieldSubmitted: (_) {
@@ -564,14 +564,14 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
                     color: Colors.grey.shade800,
                     fontWeight: FontWeight.w500,
                   ),
-                  decoration: InputDecoration(
+                            decoration: InputDecoration(
                     counterText: "",
                     hintText: "783200510",
                     hintStyle: TextStyle(color: Colors.grey.shade400),
                     filled: true,
                     fillColor: Colors.white,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
                     ),
                     enabledBorder: OutlineInputBorder(
@@ -702,10 +702,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: Colors.grey.shade900,
-            ),
-          ),
-          const SizedBox(height: 24),
-          
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+
           // Organization
           _buildTextField(
             controller: _organizationController,
@@ -827,7 +827,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
           
           // Request OTP Button
           if (_verificationMode != null && !_isOtpSent)
-            SizedBox(
+                          SizedBox(
               height: 50,
               child: OutlinedButton.icon(
                 onPressed: _isLoading ? null : _requestOtp,
@@ -1208,15 +1208,15 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
                                     // Continue Button (Primary)
                                     SizedBox(
                                       height: 56,
-                                      child: ElevatedButton(
+                            child: ElevatedButton(
                                         onPressed: _isLoading ? null : _nextStep,
-                                        style: ElevatedButton.styleFrom(
+                              style: ElevatedButton.styleFrom(
                                           backgroundColor: Colors.transparent,
                                           shadowColor: Colors.transparent,
                                           elevation: 0,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(12),
-                                          ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
                                         ).copyWith(
                                           backgroundColor: MaterialStateProperty.resolveWith<Color>(
                                             (Set<MaterialState> states) {
@@ -1238,8 +1238,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
                                               ],
                                             ),
                                             borderRadius: BorderRadius.circular(12),
-                                          ),
-                                          child: _isLoading
+                              ),
+                              child: _isLoading
                                               ? const Center(
                                                   child: Padding(
                                                     padding: EdgeInsets.all(16.0),
@@ -1258,15 +1258,15 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
                                                     padding: EdgeInsets.symmetric(vertical: 16.0),
                                                     child: Text(
                                                       "Continue",
-                                                      style: TextStyle(
-                                                        fontSize: 16,
+                                      style: TextStyle(
+                                        fontSize: 16,
                                                         fontWeight: FontWeight.bold,
                                                         color: Colors.white,
                                                         letterSpacing: 0.5,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
+                                      ),
+                                    ),
+                            ),
+                          ),
                                         ),
                                       ),
                                     ),
@@ -1287,7 +1287,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
                                             "or",
                                             style: TextStyle(
                                               color: Colors.grey.shade500,
-                                              fontSize: 14,
+                                fontSize: 14,
                                               fontWeight: FontWeight.w500,
                                             ),
                                           ),
@@ -1296,9 +1296,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
                                           child: Divider(
                                             color: Colors.grey.shade300,
                                             thickness: 1,
-                                          ),
-                                        ),
-                                      ],
+                              ),
+                            ),
+                          ],
                                     ),
                                     const SizedBox(height: 24),
 
@@ -1328,9 +1328,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
                                               backgroundColor: Colors.white,
                                             ),
                                             child: Row(
-                                              mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisAlignment: MainAxisAlignment.center,
                                               mainAxisSize: MainAxisSize.min,
-                                              children: [
+                            children: [
                                                 Icon(
                                                   Icons.verified_user_outlined,
                                                   size: 18,
@@ -1340,7 +1340,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
                                                 Flexible(
                                                   child: Text(
                                                     "Activate Account",
-                                                    style: TextStyle(
+                                style: TextStyle(
                                                       fontSize: 13,
                                                       fontWeight: FontWeight.w500,
                                                       color: Colors.grey.shade800,
@@ -1358,13 +1358,13 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
                                         Expanded(
                                           child: OutlinedButton(
                                             onPressed: () {
-                                              Navigator.pushReplacement(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder: (context) => const LoginScreen(),
-                                                ),
-                                              );
-                                            },
+                                  Navigator.pushReplacement(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const LoginScreen(),
+                                    ),
+                                  );
+                                },
                                             style: OutlinedButton.styleFrom(
                                               padding: const EdgeInsets.symmetric(vertical: 14),
                                               side: BorderSide(
@@ -1389,7 +1389,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
                                                 Flexible(
                                                   child: Text(
                                                     "Log In",
-                                                    style: TextStyle(
+                                  style: TextStyle(
                                                       fontSize: 13,
                                                       fontWeight: FontWeight.w500,
                                                       color: Colors.grey.shade800,
@@ -1484,7 +1484,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
                                                       _currentStep == _totalSteps - 1 ? "Submit" : "Continue",
                                                       style: const TextStyle(
                                                         fontSize: 16,
-                                                        fontWeight: FontWeight.bold,
+                                    fontWeight: FontWeight.bold,
                                                         color: Colors.white,
                                                         letterSpacing: 0.5,
                                                       ),
@@ -1492,13 +1492,13 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
                                                   ),
                                                 ),
                                         ),
-                                      ),
-                                    ),
                                   ),
-                                ],
+                                ),
                               ),
                             ],
-                          ],
+                          ),
+                            ],
+                        ],
                         ),
                       ),
                     ),

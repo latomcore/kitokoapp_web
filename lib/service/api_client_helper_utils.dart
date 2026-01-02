@@ -13,6 +13,7 @@ import 'package:encrypt/encrypt.dart' as encryptPackage;
 import 'package:kitokopay/service/token_storage.dart';
 import 'package:kitokopay/service/public_key_service.dart';
 import 'package:kitokopay/config/app_config.dart';
+import 'package:kitokopay/service/sensitive_data_storage.dart'; // PHASE 2: Secure storage for CustomerId/AppId
 import 'dart:html' as html; // Import html for localStorage
 import 'dart:async'; // Import for Timer
 // import dotenv
@@ -182,8 +183,15 @@ class ElmsSSL {
     } else if (statusCode == 401 || statusCode == 200) {
       var parsedResponse = cleanResponse(decrypt(responseBody, strKey, strIV));
 
+      // PHASE 2: Store CustomerId and AppId securely (with SharedPreferences backup for revert)
+      final sensitiveStorage = SensitiveDataStorage();
+      await sensitiveStorage.setCustomerId(parsedResponse['Data']['CustomerId']);
+      await sensitiveStorage.setAppId(parsedResponse['Data']['AppId']);
+      
+      // Also keep in SharedPreferences for backward compatibility and easy revert
       await prefs.setString('customerId', parsedResponse['Data']['CustomerId']);
       await prefs.setString('appId', parsedResponse['Data']['AppId']);
+      
       return jsonEncode({"status": "success"});
     } else {
       // Handle unexpected status codes
@@ -201,9 +209,18 @@ class ElmsSSL {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     ApiClient apiClient = ApiClient();
 
-    // Get AppId and CustomerId from SharedPreferences
-    String? AppId = prefs.getString("appId");
-    String? CustomerId = prefs.getString("customerId");
+    // PHASE 2: Get AppId and CustomerId from secure storage (with SharedPreferences fallback)
+    final sensitiveStorage = SensitiveDataStorage();
+    String? AppId = await sensitiveStorage.getAppId();
+    String? CustomerId = await sensitiveStorage.getCustomerId();
+    
+    // Fallback to SharedPreferences if secure storage returns null (for migration/revert)
+    if (AppId == null || AppId.isEmpty) {
+      AppId = prefs.getString("appId");
+    }
+    if (CustomerId == null || CustomerId.isEmpty) {
+      CustomerId = prefs.getString("customerId");
+    }
 
     // Check if AppId or CustomerId is empty; if so, fetch using getCustomer
     if (AppId == null ||
@@ -214,9 +231,17 @@ class ElmsSSL {
       Map<String, dynamic> resultMap = jsonDecode(result);
 
       if (resultMap['status'] == 'success') {
-        // Refetch AppId and CustomerId after a successful getCustomer call
-        AppId = prefs.getString("appId");
-        CustomerId = prefs.getString("customerId");
+        // PHASE 2: Refetch AppId and CustomerId from secure storage after successful getCustomer call
+        AppId = await sensitiveStorage.getAppId();
+        CustomerId = await sensitiveStorage.getCustomerId();
+        
+        // Fallback to SharedPreferences if secure storage returns null
+        if (AppId == null || AppId.isEmpty) {
+          AppId = prefs.getString("appId");
+        }
+        if (CustomerId == null || CustomerId.isEmpty) {
+          CustomerId = prefs.getString("customerId");
+        }
 
         if (AppId == null ||
             AppId.isEmpty ||
@@ -349,9 +374,18 @@ class ElmsSSL {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     ApiClient apiClient = ApiClient();
 
-    // Get AppId and CustomerId from SharedPreferences
-    String? AppId = prefs.getString("appId");
-    String? CustomerId = prefs.getString("customerId");
+    // PHASE 2: Get AppId and CustomerId from secure storage (with SharedPreferences fallback)
+    final sensitiveStorage = SensitiveDataStorage();
+    String? AppId = await sensitiveStorage.getAppId();
+    String? CustomerId = await sensitiveStorage.getCustomerId();
+    
+    // Fallback to SharedPreferences if secure storage returns null (for migration/revert)
+    if (AppId == null || AppId.isEmpty) {
+      AppId = prefs.getString("appId");
+    }
+    if (CustomerId == null || CustomerId.isEmpty) {
+      CustomerId = prefs.getString("customerId");
+    }
 
     // Check if AppId or CustomerId is empty; if so, fetch using getCustomer
     if (AppId == null ||
@@ -362,9 +396,17 @@ class ElmsSSL {
       Map<String, dynamic> resultMap = jsonDecode(result);
 
       if (resultMap['status'] == 'success') {
-        // Refetch AppId and CustomerId after a successful getCustomer call
-        AppId = prefs.getString("appId");
-        CustomerId = prefs.getString("customerId");
+        // PHASE 2: Refetch AppId and CustomerId from secure storage after successful getCustomer call
+        AppId = await sensitiveStorage.getAppId();
+        CustomerId = await sensitiveStorage.getCustomerId();
+        
+        // Fallback to SharedPreferences if secure storage returns null
+        if (AppId == null || AppId.isEmpty) {
+          AppId = prefs.getString("appId");
+        }
+        if (CustomerId == null || CustomerId.isEmpty) {
+          CustomerId = prefs.getString("customerId");
+        }
 
         if (AppId == null ||
             AppId.isEmpty ||
@@ -495,8 +537,18 @@ class ElmsSSL {
       "command": "APPLICATION",
     };
 
-    String? AppId = prefs.getString("appId");
-    String? CustomerId = prefs.getString("customerId");
+    // PHASE 2: Get AppId and CustomerId from secure storage (with SharedPreferences fallback)
+    final sensitiveStorage = SensitiveDataStorage();
+    String? AppId = await sensitiveStorage.getAppId();
+    String? CustomerId = await sensitiveStorage.getCustomerId();
+    
+    // Fallback to SharedPreferences if secure storage returns null (for migration/revert)
+    if (AppId == null || AppId.isEmpty) {
+      AppId = prefs.getString("appId");
+    }
+    if (CustomerId == null || CustomerId.isEmpty) {
+      CustomerId = prefs.getString("customerId");
+    }
 
     // Retrieve login details to get mobileNumber
     String mobileNumber = '';
@@ -720,9 +772,10 @@ class ElmsSSL {
     String command = "DETAILS";
     String platform = "WEB";
 
-    // Retrieve appId and customerId from SharedPreferences
-    String appId = prefs.getString("appId") ?? '';
-    String customerId = prefs.getString("customerId") ?? '';
+    // PHASE 2: Retrieve appId and customerId from secure storage (with SharedPreferences fallback)
+    final sensitiveStorage = SensitiveDataStorage();
+    String appId = (await sensitiveStorage.getAppId()) ?? prefs.getString("appId") ?? '';
+    String customerId = (await sensitiveStorage.getCustomerId()) ?? prefs.getString("customerId") ?? '';
 
     // Retrieve login details to get mobileNumber
     String mobileNumber = '';
@@ -832,9 +885,10 @@ class ElmsSSL {
     String command = "DETAILS";
     String platform = "WEB";
 
-    // Retrieve appId and customerId from SharedPreferences
-    String appId = prefs.getString("appId") ?? '';
-    String customerId = prefs.getString("customerId") ?? '';
+    // PHASE 2: Retrieve appId and customerId from secure storage (with SharedPreferences fallback)
+    final sensitiveStorage = SensitiveDataStorage();
+    String appId = (await sensitiveStorage.getAppId()) ?? prefs.getString("appId") ?? '';
+    String customerId = (await sensitiveStorage.getCustomerId()) ?? prefs.getString("customerId") ?? '';
 
     // Retrieve login details to get mobileNumber
     String mobileNumber = '';
@@ -1138,9 +1192,10 @@ class ElmsSSL {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     ApiClient apiClient = ApiClient();
 
-    // Retrieve appId and customerId from SharedPreferences
-    String appId = prefs.getString("appId") ?? '';
-    String customerId = prefs.getString("customerId") ?? '';
+    // PHASE 2: Retrieve appId and customerId from secure storage (with SharedPreferences fallback)
+    final sensitiveStorage = SensitiveDataStorage();
+    String appId = (await sensitiveStorage.getAppId()) ?? prefs.getString("appId") ?? '';
+    String customerId = (await sensitiveStorage.getCustomerId()) ?? prefs.getString("customerId") ?? '';
     String mobileNumber = '';
 
     // Retrieve mobile number from login details

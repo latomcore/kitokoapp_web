@@ -29,6 +29,10 @@ class SecureStorageService {
   static const String _apiPasswordKey = 'api_password';
   static const String _publicKeyKey = 'public_key';
   static const String _publicKeyTimestampKey = 'public_key_timestamp';
+  static const String _authTokenKey = 'auth_token';
+  static const String _tokenExpirationKey = 'token_expiration';
+  static const String _customerIdKey = 'customer_id';
+  static const String _appIdKey = 'app_id';
 
   /// Store API username securely
   Future<void> setApiUsername(String username) async {
@@ -175,6 +179,227 @@ class SecureStorageService {
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ Failed to clear PUBLIC_KEY: $e');
+      }
+    }
+  }
+
+  // ============================================
+  // TOKEN STORAGE (CRITICAL SECURITY FIX)
+  // ============================================
+
+  /// Store authentication token securely
+  Future<void> setAuthToken(String token) async {
+    try {
+      await _storage.write(key: _authTokenKey, value: token);
+      if (kDebugMode) {
+        debugPrint('✅ Auth token stored securely');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Failed to store auth token: $e');
+      }
+      rethrow;
+    }
+  }
+
+  /// Get authentication token from secure storage
+  Future<String?> getAuthToken() async {
+    try {
+      return await _storage.read(key: _authTokenKey);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Failed to read auth token: $e');
+      }
+      return null;
+    }
+  }
+
+  /// Store token expiration timestamp
+  Future<void> setTokenExpiration(DateTime expirationTime) async {
+    try {
+      final timestamp = expirationTime.millisecondsSinceEpoch.toString();
+      await _storage.write(key: _tokenExpirationKey, value: timestamp);
+      if (kDebugMode) {
+        debugPrint('✅ Token expiration stored: $expirationTime');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Failed to store token expiration: $e');
+      }
+    }
+  }
+
+  /// Get token expiration timestamp
+  Future<DateTime?> getTokenExpiration() async {
+    try {
+      final timestampStr = await _storage.read(key: _tokenExpirationKey);
+      if (timestampStr == null) return null;
+      
+      final timestamp = int.tryParse(timestampStr);
+      if (timestamp == null) return null;
+      
+      return DateTime.fromMillisecondsSinceEpoch(timestamp);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Failed to read token expiration: $e');
+      }
+      return null;
+    }
+  }
+
+  /// Check if token is expired
+  /// Returns true only if expiration is set AND current time is after expiration
+  /// Returns false if no expiration is set (for backward compatibility)
+  Future<bool> isTokenExpired() async {
+    try {
+      final expiration = await getTokenExpiration();
+      if (expiration == null) {
+        // No expiration set - don't assume expired (token might be valid without expiration tracking)
+        return false;
+      }
+      
+      return DateTime.now().isAfter(expiration);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Failed to check token expiration: $e');
+      }
+      return false; // On error, don't assume expired (safer for debugging)
+    }
+  }
+
+  /// Remove authentication token
+  Future<void> removeAuthToken() async {
+    try {
+      await _storage.delete(key: _authTokenKey);
+      await _storage.delete(key: _tokenExpirationKey);
+      if (kDebugMode) {
+        debugPrint('✅ Auth token removed');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Failed to remove auth token: $e');
+      }
+    }
+  }
+
+  // ============================================
+  // SENSITIVE DATA STORAGE (CRITICAL SECURITY FIX)
+  // ============================================
+
+  /// Store Customer ID securely
+  Future<void> setCustomerId(String customerId) async {
+    try {
+      await _storage.write(key: _customerIdKey, value: customerId);
+      if (kDebugMode) {
+        debugPrint('✅ Customer ID stored securely');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Failed to store Customer ID: $e');
+      }
+      rethrow;
+    }
+  }
+
+  /// Get Customer ID from secure storage
+  Future<String?> getCustomerId() async {
+    try {
+      return await _storage.read(key: _customerIdKey);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Failed to read Customer ID: $e');
+      }
+      return null;
+    }
+  }
+
+  /// Store App ID securely
+  Future<void> setAppId(String appId) async {
+    try {
+      await _storage.write(key: _appIdKey, value: appId);
+      if (kDebugMode) {
+        debugPrint('✅ App ID stored securely');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Failed to store App ID: $e');
+      }
+      rethrow;
+    }
+  }
+
+  /// Get App ID from secure storage
+  Future<String?> getAppId() async {
+    try {
+      return await _storage.read(key: _appIdKey);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Failed to read App ID: $e');
+      }
+      return null;
+    }
+  }
+
+  /// Remove Customer ID
+  Future<void> removeCustomerId() async {
+    try {
+      await _storage.delete(key: _customerIdKey);
+      if (kDebugMode) {
+        debugPrint('✅ Customer ID removed');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Failed to remove Customer ID: $e');
+      }
+    }
+  }
+
+  /// Remove App ID
+  Future<void> removeAppId() async {
+    try {
+      await _storage.delete(key: _appIdKey);
+      if (kDebugMode) {
+        debugPrint('✅ App ID removed');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Failed to remove App ID: $e');
+      }
+    }
+  }
+
+  /// Remove Customer ID and App ID
+  Future<void> removeCustomerData() async {
+    try {
+      await _storage.delete(key: _customerIdKey);
+      await _storage.delete(key: _appIdKey);
+      if (kDebugMode) {
+        debugPrint('✅ Customer data removed');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Failed to remove customer data: $e');
+      }
+    }
+  }
+
+  /// Enhanced clearAll to include tokens and customer data
+  Future<void> clearAllSecureData() async {
+    try {
+      await _storage.delete(key: _apiUsernameKey);
+      await _storage.delete(key: _apiPasswordKey);
+      await _storage.delete(key: _publicKeyKey);
+      await _storage.delete(key: _publicKeyTimestampKey);
+      await _storage.delete(key: _authTokenKey);
+      await _storage.delete(key: _tokenExpirationKey);
+      await _storage.delete(key: _customerIdKey);
+      await _storage.delete(key: _appIdKey);
+      if (kDebugMode) {
+        debugPrint('✅ All secure storage cleared (including tokens and customer data)');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Failed to clear secure storage: $e');
       }
     }
   }
