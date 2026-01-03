@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:kitokopay/src/screens/auth/login.dart';
 import 'package:kitokopay/src/screens/auth/otp.dart';
 import 'package:kitokopay/service/api_client_helper_utils.dart';
@@ -47,6 +48,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
   String? _identificationType;
   String? _verificationMode;
   bool _isLoading = false;
+  bool _isOtpLoading = false; // Separate loading state for OTP operations
   String? _errorMessage;
   bool _obscurePin = true;
   bool _isOtpSent = false;
@@ -97,87 +99,243 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
     return phone.replaceAll(RegExp(r'[^0-9]'), '');
   }
   
+  /// Check if PIN is valid (exactly 4 digits)
+  bool get _isPinValid {
+    final pin = _pinController.text.trim();
+    return pin.length == 4 && RegExp(r'^\d{4}$').hasMatch(pin);
+  }
+  
   Future<void> _requestOtp() async {
+    // FIRST: Disable button immediately on click
+    _isOtpLoading = true;
+    _errorMessage = null;
+    setState(() {}); // Force immediate rebuild to disable button
+    
+    // Quick validation checks
     if (_verificationMode == null) {
       setState(() {
+        _isOtpLoading = false; // Re-enable button
         _errorMessage = 'Please select a verification mode';
       });
       return;
     }
     
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+    // Validate required fields before sending OTP
+    // When on step 4 (Account Setup), step 2 form is not in widget tree
+    // So we validate the fields directly instead of using form validation
+    bool isValid = true;
+    String? validationError;
+    
+    if (_currentStep == 1) {
+      // We're on step 2 (Contact & ID), use form validation
+      if (_step2FormKey.currentState != null) {
+        isValid = _step2FormKey.currentState!.validate();
+      } else {
+        // Form not initialized yet, validate fields directly
+        if (_mobileNumberController.text.trim().isEmpty) {
+          validationError = 'Mobile number is required';
+          isValid = false;
+        } else if (_emailController.text.trim().isEmpty) {
+          validationError = 'Email is required';
+          isValid = false;
+        } else if (_identificationType == null) {
+          validationError = 'Please select an identification type';
+          isValid = false;
+        } else if (_identificationController.text.trim().isEmpty) {
+          validationError = 'Identification number is required';
+          isValid = false;
+        }
+      }
+    } else if (_currentStep == 3) {
+      // We're on step 4 (Account Setup), validate required fields directly
+      // since step 2 form is not in widget tree
+      if (_mobileNumberController.text.trim().isEmpty) {
+        validationError = 'Mobile number is required';
+        isValid = false;
+      } else {
+        final digitsOnly = _mobileNumberController.text.replaceAll(RegExp(r'[^0-9]'), '');
+        if (digitsOnly.length < 9 || digitsOnly.length > 10) {
+          validationError = 'Phone number must be 9-10 digits';
+          isValid = false;
+        }
+      }
+      
+      if (isValid && _emailController.text.trim().isEmpty) {
+        validationError = 'Email is required';
+        isValid = false;
+      } else if (isValid && !RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(_emailController.text.trim())) {
+        validationError = 'Please enter a valid email address';
+        isValid = false;
+      }
+      
+      if (isValid && _identificationType == null) {
+        validationError = 'Please select an identification type';
+        isValid = false;
+      }
+      
+      if (isValid && _identificationController.text.trim().isEmpty) {
+        validationError = 'Identification number is required';
+        isValid = false;
+      }
+    }
+    
+    if (!isValid) {
+      setState(() {
+        _isOtpLoading = false; // Re-enable button on validation error
+        _errorMessage = validationError ?? 'Please complete all required fields';
+      });
+      return;
+    }
+    
+    // Keep loading state true - proceed with API call
     
     try {
-      // TODO: Implement OTP request API call
-      await Future.delayed(const Duration(seconds: 2)); // Simulate API call
+      String fullPhoneNumber = '${_selectedCountry?.phoneCode ?? '250'}${getFormattedPhoneNumber(_mobileNumberController.text)}';
       
-      setState(() {
-        _isOtpSent = true;
-        _errorMessage = null;
-      });
+      // Prepare registration data for OTP request
+      Map<String, dynamic> registrationData = {
+        "FirstName": _firstNameController.text.trim(),
+        "MiddleName": _middleNameController.text.trim(),
+        "LastName": _lastNameController.text.trim(),
+        "MobileNumber": fullPhoneNumber,
+        "IdentificationType": _identificationType ?? 'ID',
+        "Identification": _identificationController.text.trim(),
+        "Country": _selectedCountry?.name ?? '',
+        "Email": _emailController.text.trim(),
+        "Organization": _organizationController.text.trim(),
+        "Department": _departmentController.text.trim(),
+        "EmployeeCode": _employeeCodeController.text.trim(),
+        "VerificationMode": _verificationMode ?? 'Email',
+      };
       
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('OTP sent to your ${_verificationMode!.toLowerCase()}'),
-            backgroundColor: Colors.green,
-          ),
-        );
+      // Call selfRegisterSendOtp with JSON string
+      ElmsSSL elmsSSL = ElmsSSL();
+      String jsonFields = jsonEncode(registrationData);
+      String result = await elmsSSL.selfRegisterSendOtp(jsonFields);
+      
+      Map<String, dynamic> resultMap = jsonDecode(result);
+      // Only allow OTP field to be visible when status is 'success' (which means HTTP 200)
+      if (resultMap['status'] == 'success') {
+        setState(() {
+          _isOtpSent = true; // Only set to true on status 200 (success)
+          _errorMessage = null;
+        });
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(resultMap['message'] ?? 'OTP sent to your ${_verificationMode!.toLowerCase()}'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } else {
+        // On error (non-200 status), keep OTP field hidden
+        setState(() {
+          _isOtpSent = false; // Ensure field remains hidden on error
+          _isOtpLoading = false; // Re-enable button on error
+          _errorMessage = resultMap['message'] ?? 'Failed to send OTP. Please try again.';
+        });
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Failed to send OTP. Please try again.';
+        _isOtpLoading = false; // Re-enable button on exception
+        _errorMessage = 'Failed to send OTP: ${e.toString()}';
       });
     } finally {
+      // Ensure button is always re-enabled, even if something unexpected happens
       if (mounted) {
         setState(() {
-          _isLoading = false;
+          _isOtpLoading = false;
         });
       }
     }
   }
   
   Future<void> _verifyOtp() async {
+    // FIRST: Disable button immediately on click
+    _isOtpLoading = true;
+    _errorMessage = null;
+    setState(() {}); // Force immediate rebuild to disable button
+    
+    // Quick validation checks
     if (_otpController.text.trim().isEmpty) {
       setState(() {
+        _isOtpLoading = false; // Re-enable button
         _errorMessage = 'Please enter the OTP';
       });
       return;
     }
     
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+    if (_otpController.text.trim().length != 6) {
+      setState(() {
+        _isOtpLoading = false; // Re-enable button
+        _errorMessage = 'OTP must be 6 digits';
+      });
+      return;
+    }
+    
+    // Keep loading state true - proceed with API call
     
     try {
-      // TODO: Implement OTP verification API call
-      await Future.delayed(const Duration(seconds: 1)); // Simulate API call
+      String fullPhoneNumber = '${_selectedCountry?.phoneCode ?? '250'}${getFormattedPhoneNumber(_mobileNumberController.text)}';
       
-      setState(() {
-        _isOtpVerified = true;
-        _errorMessage = null;
-      });
+      // Prepare registration data for OTP verification
+      Map<String, dynamic> registrationData = {
+        "FirstName": _firstNameController.text.trim(),
+        "MiddleName": _middleNameController.text.trim(),
+        "LastName": _lastNameController.text.trim(),
+        "MobileNumber": fullPhoneNumber,
+        "IdentificationType": _identificationType ?? 'ID',
+        "Identification": _identificationController.text.trim(),
+        "Country": _selectedCountry?.name ?? '',
+        "Email": _emailController.text.trim(),
+        "Organization": _organizationController.text.trim(),
+        "Department": _departmentController.text.trim(),
+        "EmployeeCode": _employeeCodeController.text.trim(),
+        "VerificationMode": _verificationMode ?? 'Email',
+        "OTP": _otpController.text.trim(),
+      };
       
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('OTP verified successfully'),
-            backgroundColor: Colors.green,
-          ),
-        );
+      // Call selfRegisterVerifyOtp with JSON string
+      ElmsSSL elmsSSL = ElmsSSL();
+      String jsonFields = jsonEncode(registrationData);
+      String result = await elmsSSL.selfRegisterVerifyOtp(jsonFields);
+      
+      Map<String, dynamic> resultMap = jsonDecode(result);
+      // Only allow PIN field to be visible when status is 'success' (which means HTTP 200)
+      if (resultMap['status'] == 'success') {
+        setState(() {
+          _isOtpVerified = true; // Only set to true on status 200 (success)
+          _errorMessage = null;
+        });
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(resultMap['message'] ?? 'OTP verified successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } else {
+        // On error (non-200 status), keep PIN field hidden
+        setState(() {
+          _isOtpVerified = false; // Ensure field remains hidden on error
+          _isOtpLoading = false; // Re-enable button on error
+          _errorMessage = resultMap['message'] ?? 'Invalid OTP. Please try again.';
+        });
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Invalid OTP. Please try again.';
+        _isOtpLoading = false; // Re-enable button on exception
+        _errorMessage = 'Failed to verify OTP: ${e.toString()}';
       });
     } finally {
+      // Ensure button is always re-enabled, even if something unexpected happens
       if (mounted) {
         setState(() {
-          _isLoading = false;
+          _isOtpLoading = false;
         });
       }
     }
@@ -214,18 +372,24 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
         "PIN": _pinController.text.trim(),
       };
       
-      // TODO: Implement full registration API call with all fields
-      // For now, using getCustomer as a placeholder
+      // Call selfRegistration with JSON string
       ElmsSSL elmsSSL = ElmsSSL();
-      String result = await elmsSSL.getCustomer(fullPhoneNumber);
+      String jsonFields = jsonEncode(registrationData);
+      String result = await elmsSSL.selfRegistration(jsonFields);
 
       Map<String, dynamic> resultMap = jsonDecode(result);
       if (resultMap['status'] == 'success') {
         if (mounted) {
-        Navigator.pushReplacement(
-          context,
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Registration successful! Please login.'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          Navigator.pushReplacement(
+            context,
             MaterialPageRoute(builder: (context) => const LoginScreen()),
-        );
+          );
         }
       } else {
         setState(() {
@@ -827,24 +991,44 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
           
           // Request OTP Button
           if (_verificationMode != null && !_isOtpSent)
-                          SizedBox(
+            SizedBox(
               height: 50,
-              child: OutlinedButton.icon(
-                onPressed: _isLoading ? null : _requestOtp,
-                icon: Icon(Icons.send_outlined, size: 18),
-                label: const Text("Request OTP"),
+              child: OutlinedButton(
+                onPressed: (_isOtpLoading || _isLoading) ? null : _requestOtp,
                 style: OutlinedButton.styleFrom(
                   side: BorderSide(color: Colors.blue.shade600, width: 1.5),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
+                child: _isOtpLoading
+                    ? Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.blue.shade600),
+                          ),
+                        ),
+                      )
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.send_outlined, size: 18),
+                          const SizedBox(width: 8),
+                          const Text("Request OTP"),
+                        ],
+                      ),
               ),
             ),
           
+          // OTP Field - Only visible when selfRegisterSendOtp returns status 200 (success)
           if (_isOtpSent) ...[
             const SizedBox(height: 20),
-            // OTP Field
+            // OTP Field - Enabled only when OTP was successfully sent (status 200)
             _buildTextField(
               controller: _otpController,
               label: "OTP",
@@ -854,6 +1038,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
               maxLength: 6,
               focusNode: _otpFocusNode,
               textInputAction: TextInputAction.next,
+              enabled: _isOtpSent, // Only enabled when status 200 was received
               onFieldSubmitted: () {
                 if (!_isOtpVerified) {
                   _verifyOtp();
@@ -873,23 +1058,50 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
             // Verify OTP Button
             SizedBox(
               height: 50,
-              child: ElevatedButton.icon(
-                onPressed: _isOtpVerified || _isLoading ? null : _verifyOtp,
-                icon: Icon(Icons.verified_outlined, size: 18),
-                label: Text(_isOtpVerified ? "OTP Verified" : "Verify OTP"),
+              child: ElevatedButton(
+                onPressed: (_isOtpVerified || _isOtpLoading || _isLoading) ? null : _verifyOtp,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _isOtpVerified ? Colors.green : Colors.blue.shade600,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
+                child: _isOtpLoading
+                    ? Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        ),
+                      )
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.verified_outlined,
+                            size: 18,
+                            color: Colors.white,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            _isOtpVerified ? "OTP Verified" : "Verify OTP",
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                        ],
+                      ),
               ),
             ),
           ],
           
+          // PIN Field - Only visible when selfRegisterVerifyOtp returns status 200 (success)
           if (_isOtpVerified) ...[
             const SizedBox(height: 24),
-            // PIN Field
+            // PIN Field - Enabled only when OTP was successfully verified (status 200)
             _buildTextField(
               controller: _pinController,
               label: "Set PIN",
@@ -900,6 +1112,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
               obscureText: _obscurePin,
               focusNode: _pinFocusNode,
               textInputAction: TextInputAction.done,
+              enabled: _isOtpVerified, // Only enabled when status 200 was received
               suffixIcon: IconButton(
                 icon: Icon(
                   _obscurePin ? Icons.visibility_outlined : Icons.visibility_off_outlined,
@@ -911,6 +1124,14 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
                   });
                 },
               ),
+              onChanged: (value) {
+                // Trigger rebuild to update Submit button state
+                setState(() {
+                  if (_errorMessage != null) {
+                    _errorMessage = null;
+                  }
+                });
+              },
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
                   return 'PIN is required';
@@ -941,6 +1162,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
     TextInputAction? textInputAction,
     VoidCallback? onFieldSubmitted,
     ValueChanged<String>? onChanged,
+    bool enabled = true, // Add enabled parameter
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -961,6 +1183,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
           textInputAction: textInputAction,
           maxLength: maxLength,
           obscureText: obscureText,
+          enabled: enabled, // Use enabled parameter
           onFieldSubmitted: onFieldSubmitted != null ? (_) => onFieldSubmitted() : null,
           onChanged: onChanged ?? (value) {
             if (_errorMessage != null) {
@@ -1209,7 +1432,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
                                     SizedBox(
                                       height: 56,
                             child: ElevatedButton(
-                                        onPressed: _isLoading ? null : _nextStep,
+                                        onPressed: (_isLoading || (_currentStep == _totalSteps - 1 && !_isPinValid)) ? null : _nextStep,
                               style: ElevatedButton.styleFrom(
                                           backgroundColor: Colors.transparent,
                                           shadowColor: Colors.transparent,
@@ -1433,7 +1656,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
                                     child: SizedBox(
                                       height: 56,
                                       child: ElevatedButton(
-                                        onPressed: _isLoading ? null : _nextStep,
+                                        onPressed: (_isLoading || (_currentStep == _totalSteps - 1 && !_isPinValid)) ? null : _nextStep,
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: Colors.transparent,
                                           shadowColor: Colors.transparent,

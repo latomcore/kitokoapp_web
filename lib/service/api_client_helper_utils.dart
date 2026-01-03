@@ -202,6 +202,973 @@ class ElmsSSL {
     }
   }
 
+
+
+  Future<String> selfRegisterSendOtp(String jsonFields) async {
+    if (kDebugMode) {
+      debugPrint('═══════════════════════════════════════════════════════════');
+      debugPrint('📤 SELF REGISTER SEND OTP - STARTING');
+      debugPrint('═══════════════════════════════════════════════════════════');
+      debugPrint('📋 Input JSON length: ${jsonFields.length} chars');
+    }
+
+    try {
+      // Step 1: Initialize SharedPreferences
+      if (kDebugMode) {
+        debugPrint('🔄 Step 1: Initializing SharedPreferences...');
+      }
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      if (kDebugMode) {
+        debugPrint('✅ Step 1: SharedPreferences initialized');
+      }
+
+      // Step 2: Generate Unique ID
+      if (kDebugMode) {
+        debugPrint('🔄 Step 2: Generating Unique ID...');
+      }
+      var uuid = const Uuid();
+      String Uid = uuid.v4();
+      if (kDebugMode) {
+        debugPrint('✅ Step 2: Unique ID generated: $Uid');
+      }
+
+      // Step 3: Parse JSON fields
+      if (kDebugMode) {
+        debugPrint('🔄 Step 3: Parsing JSON fields...');
+      }
+      Map<String, dynamic> registrationData;
+      try {
+        registrationData = jsonDecode(jsonFields);
+        if (kDebugMode) {
+          debugPrint('✅ Step 3: JSON parsed successfully');
+          debugPrint('   Fields found: ${registrationData.keys.length}');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('❌ Step 3: Failed to parse JSON');
+          debugPrint('   Error: $e');
+        }
+        return jsonEncode({
+          "status": "error",
+          "message": "Invalid JSON format: ${e.toString()}",
+        });
+      }
+
+      // Step 4: Extract values from JSON
+      if (kDebugMode) {
+        debugPrint('🔄 Step 4: Extracting values from JSON...');
+      }
+      String FirstName = registrationData['FirstName']?.toString() ?? '';
+      String MiddleName = registrationData['MiddleName']?.toString() ?? '';
+      String LastName = registrationData['LastName']?.toString() ?? '';
+      String MobileNumber = registrationData['MobileNumber']?.toString() ?? '';
+      String IdentificationType = registrationData['IdentificationType']?.toString() ?? '';
+      String Identification = registrationData['Identification']?.toString() ?? '';
+      String Country = registrationData['Country']?.toString() ?? '';
+      String Email = registrationData['Email']?.toString() ?? '';
+      String Organization = registrationData['Organization']?.toString() ?? '';
+      String Department = registrationData['Department']?.toString() ?? '';
+      String EmployeeCode = registrationData['EmployeeCode']?.toString() ?? '';
+      String VerificationMode = registrationData['VerificationMode']?.toString() ?? '';
+      
+      if (kDebugMode) {
+        debugPrint('✅ Step 4: Values extracted');
+        debugPrint('   FirstName: ${FirstName.isNotEmpty ? "${FirstName.substring(0, 1)}***" : "empty"}');
+        debugPrint('   LastName: ${LastName.isNotEmpty ? "${LastName.substring(0, 1)}***" : "empty"}');
+        debugPrint('   MobileNumber: ${MobileNumber.isNotEmpty ? "${MobileNumber.substring(0, 3)}***" : "empty"}');
+        debugPrint('   Email: ${Email.isNotEmpty ? "${Email.split('@')[0]}@***" : "empty"}');
+        debugPrint('   VerificationMode: $VerificationMode');
+      }
+
+      // Step 5: Set service parameters
+      if (kDebugMode) {
+        debugPrint('🔄 Step 5: Setting service parameters...');
+      }
+      String service = "PROFILE";
+      String action = "BASE";
+      String command = "SELFREGISTERSENDOTP";
+      String platform = "WEB";
+      String CustomerId = "";
+      String device = "WEB";
+      String Lat = "0.200";
+      String Lon = "-1.01";
+      if (kDebugMode) {
+        debugPrint('✅ Step 5: Service parameters set');
+        debugPrint('   Service: $service');
+        debugPrint('   Action: $action');
+        debugPrint('   Command: $command');
+        debugPrint('   Platform: $platform');
+        debugPrint('   Device: $device');
+      }
+
+      // Step 6: Initialize F fields array
+      if (kDebugMode) {
+        debugPrint('🔄 Step 6: Initializing F fields array...');
+      }
+      Map<String, String> F = {
+        for (var item in List.generate(41, (index) => index))
+          'F${item.toString().padLeft(3, '0')}': ''
+      };
+      if (kDebugMode) {
+        debugPrint('✅ Step 6: F fields array initialized (41 fields)');
+      }
+
+      // Step 7: Set service fields
+      if (kDebugMode) {
+        debugPrint('🔄 Step 7: Setting service fields...');
+      }
+      F['F000'] = service;
+      F['F001'] = action;
+      F['F002'] = command;
+      F['F003'] = "ELMSAFRICA"; // Hardcoded AppId
+      F['F004'] = CustomerId;
+      F['F005'] = MobileNumber;
+      F['F007'] = "";
+      F['F009'] = device;
+      F['F010'] = device;
+      F['F011'] = "";
+      F['F014'] = platform;
+      if (kDebugMode) {
+        debugPrint('✅ Step 7: Service fields set');
+        debugPrint('   F000: $service');
+        debugPrint('   F001: $action');
+        debugPrint('   F002: $command');
+        debugPrint('   F003: ELMSAFRICA (hardcoded)');
+        debugPrint('   F005: ${MobileNumber.isNotEmpty ? "${MobileNumber.substring(0, 3)}***" : "empty"}');
+        debugPrint('   F011: YES');
+      }
+
+      // Step 8: Set registration data fields
+      if (kDebugMode) {
+        debugPrint('🔄 Step 8: Setting registration data fields...');
+      }
+      F['F021'] = MobileNumber;
+      F['F022'] = Identification;
+      F['F023'] = FirstName;
+      F['F024'] = MiddleName;
+      F['F025'] = LastName;
+      F['F026'] = EmployeeCode;
+      F['F027'] = VerificationMode;
+      F['F028'] = Email;
+      F['F029'] = IdentificationType;
+      F['F030'] = Country;
+      F['F031'] = Organization;
+      F['F032'] = Department;
+      if (kDebugMode) {
+        debugPrint('✅ Step 8: Registration data fields set');
+        debugPrint('   F021-F032: All registration fields populated');
+      }
+
+      // Step 9: Create ApiClient instance
+      if (kDebugMode) {
+        debugPrint('🔄 Step 9: Creating ApiClient instance...');
+      }
+      ApiClient apiClient = ApiClient();
+      if (kDebugMode) {
+        debugPrint('✅ Step 9: ApiClient created');
+      }
+
+      // Step 10: Encode transaction data
+      if (kDebugMode) {
+        debugPrint('🔄 Step 10: Encoding transaction data...');
+      }
+      String trxData = jsonEncode(F);
+      if (kDebugMode) {
+        debugPrint('✅ Step 10: Transaction data encoded');
+        debugPrint('   TrxData length: ${trxData.length} chars');
+      }
+
+      // Step 11: Prepare app data
+      if (kDebugMode) {
+        debugPrint('🔄 Step 11: Preparing app data...');
+      }
+      Map<String, String> appDataMap = {
+        "UniqueId": Uid,
+        "AppId": "",
+        "device": device,
+        "platform": platform,
+        "CustomerId": CustomerId,
+        "MobileNumber": MobileNumber,
+        "Lat": Lat,
+        "Lon": Lon,
+      };
+      String appData = jsonEncode(appDataMap);
+      if (kDebugMode) {
+        debugPrint('✅ Step 11: App data prepared');
+        debugPrint('   AppData length: ${appData.length} chars');
+      }
+
+      // Step 12: Hash transaction data
+      if (kDebugMode) {
+        debugPrint('🔄 Step 12: Hashing transaction data...');
+      }
+      String hashedTrxData = hash(trxData, device);
+      if (kDebugMode) {
+        debugPrint('✅ Step 12: Transaction data hashed');
+        debugPrint('   Hash length: ${hashedTrxData.length} chars');
+      }
+
+      // Step 13: Generate encryption keys
+      if (kDebugMode) {
+        debugPrint('🔄 Step 13: Generating encryption keys...');
+      }
+      String strKey = apiClient.generateRandomString(16);
+      String strIV = apiClient.generateRandomString(16);
+      if (kDebugMode) {
+        debugPrint('✅ Step 13: Encryption keys generated');
+        debugPrint('   Key length: ${strKey.length} chars');
+        debugPrint('   IV length: ${strIV.length} chars');
+      }
+
+      // Step 14: Encrypt data
+      if (kDebugMode) {
+        debugPrint('🔄 Step 14: Encrypting data...');
+      }
+      String Rsc = hashedTrxData;
+      String Rrk = encrypt(strKey, publicKeyString);
+      String Rrv = encrypt(strIV, publicKeyString);
+      String Aad = encrypt1(appData, strKey, strIV);
+      String coreData = encrypt1(trxData, strKey, strIV);
+      if (kDebugMode) {
+        debugPrint('✅ Step 14: Data encrypted');
+        debugPrint('   Rrk length: ${Rrk.length} chars');
+        debugPrint('   Rrv length: ${Rrv.length} chars');
+        debugPrint('   Aad length: ${Aad.length} chars');
+        debugPrint('   CoreData length: ${coreData.length} chars');
+      }
+
+      // Step 15: Prepare auth request
+      if (kDebugMode) {
+        debugPrint('🔄 Step 15: Preparing auth request...');
+      }
+      Map<String, String> authRequest = {
+        "H00": Uid,
+        "H03": Rsc,
+        "H01": Rrk,
+        "H02": Rrv,
+        "H04": Aad,
+      };
+      if (kDebugMode) {
+        debugPrint('✅ Step 15: Auth request prepared');
+        debugPrint('   H00: $Uid');
+        debugPrint('   H03 length: ${Rsc.length} chars');
+        debugPrint('   H01 length: ${Rrk.length} chars');
+        debugPrint('   H02 length: ${Rrv.length} chars');
+        debugPrint('   H04 length: ${Aad.length} chars');
+      }
+
+      // Step 16: Prepare core request
+      if (kDebugMode) {
+        debugPrint('🔄 Step 16: Preparing core request...');
+      }
+      Map<String, String> coreRequest = {"Data": coreData};
+      if (kDebugMode) {
+        debugPrint('✅ Step 16: Core request prepared');
+        debugPrint('   Data length: ${coreData.length} chars');
+      }
+
+      // Step 17: Send auth request
+      if (kDebugMode) {
+        debugPrint('🔄 Step 17: Sending auth request...');
+      }
+      try {
+        await apiClient.authRequest(authRequest);
+        if (kDebugMode) {
+          debugPrint('✅ Step 17: Auth request successful');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('❌ Step 17: Auth request failed');
+          debugPrint('   Error: $e');
+        }
+        rethrow;
+      }
+
+      // Step 18: Get token
+      if (kDebugMode) {
+        debugPrint('🔄 Step 18: Retrieving token...');
+      }
+      final token = await TokenStorage().getToken();
+      if (token == null || token.isEmpty) {
+        if (kDebugMode) {
+          debugPrint('❌ Step 18: Token not found');
+        }
+        return jsonEncode({
+          "status": "error",
+          "message": "Authentication failed. Token not found.",
+        });
+      }
+      if (kDebugMode) {
+        debugPrint('✅ Step 18: Token retrieved');
+        debugPrint('   Token length: ${token.length} chars');
+      }
+
+      // Step 19: Send core request
+      if (kDebugMode) {
+        debugPrint('🔄 Step 19: Sending core request...');
+      }
+      final coreResult = await apiClient.coreRequest(
+        token,
+        coreRequest,
+        command,
+      );
+      if (kDebugMode) {
+        debugPrint('✅ Step 19: Core request completed');
+        debugPrint('   Status code: ${coreResult['statusCode']}');
+        debugPrint('   Response body length: ${coreResult['body'].length} chars');
+      }
+
+      // Step 20: Process response
+      if (kDebugMode) {
+        debugPrint('🔄 Step 20: Processing response...');
+      }
+      int statusCode = coreResult['statusCode'];
+      String responseBody = coreResult['body'];
+
+      if (statusCode == 400) {
+        if (kDebugMode) {
+          debugPrint('⚠️ Step 20: Status code 400 (Bad Request)');
+          debugPrint('   Response: $responseBody');
+        }
+        return jsonEncode({
+          "status": "error",
+          "message": responseBody,
+        });
+      } else if (statusCode == 401) {
+        if (kDebugMode) {
+          debugPrint('🔄 Step 20: Status code 401 - Decrypting response...');
+        }
+        try {
+          var parsedResponse = cleanResponse(decrypt(responseBody, strKey, strIV));
+          if (kDebugMode) {
+            debugPrint('✅ Step 20: Response decrypted successfully');
+            debugPrint('   Response keys: ${parsedResponse.keys.join(", ")}');
+          }
+          
+          // Handle response structure: Data can be a string or an object
+          String message;
+          if (parsedResponse['Data'] is String) {
+            // Data is a string message (e.g., "Otp created successfully")
+            message = parsedResponse['Data'] as String;
+            if (kDebugMode) {
+              debugPrint('   Data is a string: $message');
+            }
+          } else if (parsedResponse['Data'] is Map) {
+            // Data is an object - extract message and optionally CustomerId/AppId
+            Map<String, dynamic> dataObj = parsedResponse['Data'] as Map<String, dynamic>;
+            message = dataObj['Display']?.toString() ?? 'OTP sent successfully!';
+            
+            // PHASE 2: Store CustomerId and AppId securely (if present)
+            if (kDebugMode) {
+              debugPrint('🔄 Step 20.1: Storing CustomerId and AppId...');
+            }
+            final sensitiveStorage = SensitiveDataStorage();
+            if (dataObj['CustomerId'] != null) {
+              String customerIdStr = dataObj['CustomerId'].toString();
+              await sensitiveStorage.setCustomerId(customerIdStr);
+              await prefs.setString('customerId', customerIdStr);
+              if (kDebugMode) {
+                // Sanitize CustomerId for logging (show only first 3 and last 2 chars)
+                String sanitized = customerIdStr.length > 5 
+                    ? '${customerIdStr.substring(0, 3)}***${customerIdStr.substring(customerIdStr.length - 2)}'
+                    : '***';
+                debugPrint('✅ CustomerId stored: $sanitized');
+              }
+            }
+            if (dataObj['AppId'] != null) {
+              String appIdStr = dataObj['AppId'].toString();
+              await sensitiveStorage.setAppId(appIdStr);
+              await prefs.setString('appId', appIdStr);
+              if (kDebugMode) {
+                // Sanitize AppId for logging (show only first 3 and last 2 chars)
+                String sanitized = appIdStr.length > 5 
+                    ? '${appIdStr.substring(0, 3)}***${appIdStr.substring(appIdStr.length - 2)}'
+                    : '***';
+                debugPrint('✅ AppId stored: $sanitized');
+              }
+            }
+          } else {
+            message = 'OTP sent successfully!';
+          }
+          
+          if (kDebugMode) {
+            debugPrint('✅ Step 20: Success response prepared');
+            debugPrint('   Message: $message');
+            debugPrint('═══════════════════════════════════════════════════════════');
+            debugPrint('✅ SELF REGISTER SEND OTP - SUCCESS');
+            debugPrint('═══════════════════════════════════════════════════════════');
+          }
+          return jsonEncode({
+            "status": "success",
+            "message": message,
+          });
+        } catch (e, stackTrace) {
+          if (kDebugMode) {
+            debugPrint('❌ Step 20: Failed to decrypt/parse response');
+            debugPrint('   Error: $e');
+            debugPrint('   Stack trace: $stackTrace');
+          }
+          return jsonEncode({
+            "status": "error",
+            "message": "Failed to process response: ${e.toString()}",
+          });
+        }
+      } else if (statusCode == 200) {
+        if (kDebugMode) {
+          debugPrint('🔄 Step 20: Status code 200 - Decrypting response...');
+        }
+        try {
+          var parsedResponse = cleanResponse(decrypt(responseBody, strKey, strIV));
+          if (kDebugMode) {
+            debugPrint('✅ Step 20: Response decrypted successfully');
+            debugPrint('   Response keys: ${parsedResponse.keys.join(", ")}');
+            debugPrint('   Data type: ${parsedResponse['Data'].runtimeType}');
+          }
+          
+          // Handle response structure: Data can be a string or an object
+          String message;
+          if (parsedResponse['Data'] is String) {
+            // Data is a string message (e.g., "Otp created successfully")
+            message = parsedResponse['Data'] as String;
+            if (kDebugMode) {
+              debugPrint('   Data is a string: $message');
+            }
+          } else if (parsedResponse['Data'] is Map) {
+            // Data is an object - extract message and optionally CustomerId/AppId
+            Map<String, dynamic> dataObj = parsedResponse['Data'] as Map<String, dynamic>;
+            message = dataObj['Display']?.toString() ?? 'OTP sent successfully!';
+            
+            // PHASE 2: Store CustomerId and AppId securely (if present)
+            if (kDebugMode) {
+              debugPrint('🔄 Step 20.1: Storing CustomerId and AppId...');
+            }
+            final sensitiveStorage = SensitiveDataStorage();
+            if (dataObj['CustomerId'] != null) {
+              String customerIdStr = dataObj['CustomerId'].toString();
+              await sensitiveStorage.setCustomerId(customerIdStr);
+              await prefs.setString('customerId', customerIdStr);
+              if (kDebugMode) {
+                // Sanitize CustomerId for logging (show only first 3 and last 2 chars)
+                String sanitized = customerIdStr.length > 5 
+                    ? '${customerIdStr.substring(0, 3)}***${customerIdStr.substring(customerIdStr.length - 2)}'
+                    : '***';
+                debugPrint('✅ CustomerId stored: $sanitized');
+              }
+            }
+            if (dataObj['AppId'] != null) {
+              String appIdStr = dataObj['AppId'].toString();
+              await sensitiveStorage.setAppId(appIdStr);
+              await prefs.setString('appId', appIdStr);
+              if (kDebugMode) {
+                // Sanitize AppId for logging (show only first 3 and last 2 chars)
+                String sanitized = appIdStr.length > 5 
+                    ? '${appIdStr.substring(0, 3)}***${appIdStr.substring(appIdStr.length - 2)}'
+                    : '***';
+                debugPrint('✅ AppId stored: $sanitized');
+              }
+            }
+          } else {
+            message = 'OTP sent successfully!';
+          }
+          
+          if (kDebugMode) {
+            debugPrint('✅ Step 20: Success response prepared');
+            debugPrint('   Message: $message');
+            debugPrint('═══════════════════════════════════════════════════════════');
+            debugPrint('✅ SELF REGISTER SEND OTP - SUCCESS');
+            debugPrint('═══════════════════════════════════════════════════════════');
+          }
+          return jsonEncode({
+            "status": "success",
+            "message": message,
+          });
+        } catch (e, stackTrace) {
+          if (kDebugMode) {
+            debugPrint('❌ Step 20: Failed to decrypt/parse response');
+            debugPrint('   Error: $e');
+            debugPrint('   Stack trace: $stackTrace');
+          }
+          return jsonEncode({
+            "status": "error",
+            "message": "Failed to process response: ${e.toString()}",
+          });
+        }
+      } else {
+        if (kDebugMode) {
+          debugPrint('⚠️ Step 20: Unexpected status code: $statusCode');
+          debugPrint('   Response: ${responseBody.length > 200 ? responseBody.substring(0, 200) + "..." : responseBody}');
+        }
+        return jsonEncode({
+          "status": "error",
+          "message": "Unexpected status code: $statusCode",
+        });
+      }
+    } catch (e, stackTrace) {
+      if (kDebugMode) {
+        debugPrint('═══════════════════════════════════════════════════════════');
+        debugPrint('❌ SELF REGISTER SEND OTP - ERROR');
+        debugPrint('═══════════════════════════════════════════════════════════');
+        debugPrint('❌ Error Type: ${e.runtimeType}');
+        debugPrint('❌ Error Message: $e');
+        debugPrint('❌ Stack Trace:');
+        debugPrint('$stackTrace');
+        debugPrint('═══════════════════════════════════════════════════════════');
+      }
+      return jsonEncode({
+        "status": "error",
+        "message": "An error occurred: ${e.toString()}",
+      });
+    }
+  }
+
+  
+  Future<String> selfRegisterVerifyOtp(String jsonFields) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    var uuid = const Uuid();
+    String Uid = uuid.v4();
+
+    // Parse JSON fields
+    Map<String, dynamic> registrationData;
+    try {
+      registrationData = jsonDecode(jsonFields);
+    } catch (e) {
+      return jsonEncode({
+        "status": "error",
+        "message": "Invalid JSON format: ${e.toString()}",
+      });
+    }
+
+    // Extract values from JSON
+    String FirstName = registrationData['FirstName']?.toString() ?? '';
+    String MiddleName = registrationData['MiddleName']?.toString() ?? '';
+    String LastName = registrationData['LastName']?.toString() ?? '';
+    String MobileNumber = registrationData['MobileNumber']?.toString() ?? '';
+    String IdentificationType = registrationData['IdentificationType']?.toString() ?? '';
+    String Identification = registrationData['Identification']?.toString() ?? '';
+    String Country = registrationData['Country']?.toString() ?? '';
+    String Email = registrationData['Email']?.toString() ?? '';
+    String Organization = registrationData['Organization']?.toString() ?? '';
+    String Department = registrationData['Department']?.toString() ?? '';
+    String EmployeeCode = registrationData['EmployeeCode']?.toString() ?? '';
+    String VerificationMode = registrationData['VerificationMode']?.toString() ?? '';
+    String OTP = registrationData['OTP']?.toString() ?? '';
+
+    String service = "PROFILE";
+    String action = "BASE";
+    String command = "SELFREGISTERVERIFYOTP";
+    String platform = "WEB";
+    String CustomerId = "";
+    String device = "WEB";
+    String Lat = "0.200";
+    String Lon = "-1.01";
+
+    // Initialize F fields array
+    Map<String, String> F = {
+      for (var item in List.generate(41, (index) => index))
+        'F${item.toString().padLeft(3, '0')}': ''
+    };
+
+    // Set service fields
+    F['F000'] = service;
+    F['F001'] = action;
+    F['F002'] = command;
+    F['F003'] = "ELMSAFRICA"; // Hardcoded AppId
+    F['F004'] = CustomerId;
+    F['F005'] = MobileNumber;
+    F['F007'] = "";
+    F['F009'] = device;
+    F['F010'] = device;
+    F['F011'] = "";
+    F['F014'] = platform;
+
+    // Set registration data fields
+    F['F021'] = MobileNumber;
+    F['F022'] = Identification;
+    F['F023'] = FirstName;
+    F['F024'] = MiddleName;
+    F['F025'] = LastName;
+    F['F026'] = EmployeeCode;
+    F['F027'] = VerificationMode;
+    F['F028'] = Email;
+    F['F029'] = IdentificationType;
+    F['F030'] = Country;
+    F['F031'] = Organization;
+    F['F032'] = Department;
+    F['F033'] = OTP;
+
+    ApiClient apiClient = ApiClient();
+
+    String trxData = jsonEncode(F);
+
+    Map<String, String> appDataMap = {
+      "UniqueId": Uid,
+      "AppId": "",
+      "device": device,
+      "platform": platform,
+      "CustomerId": CustomerId,
+      "MobileNumber": MobileNumber,
+      "Lat": Lat,
+      "Lon": Lon,
+    };
+
+    String appData = jsonEncode(appDataMap);
+
+    String hashedTrxData = hash(trxData, device);
+
+    String strKey = apiClient.generateRandomString(16);
+    String strIV = apiClient.generateRandomString(16);
+
+    String Rsc = hashedTrxData;
+    String Rrk = encrypt(strKey, publicKeyString);
+    String Rrv = encrypt(strIV, publicKeyString);
+    String Aad = encrypt1(appData, strKey, strIV);
+
+    String coreData = encrypt1(trxData, strKey, strIV);
+
+    Map<String, String> authRequest = {
+      "H00": Uid,
+      "H03": Rsc,
+      "H01": Rrk,
+      "H02": Rrv,
+      "H04": Aad,
+    };
+
+    Map<String, String> coreRequest = {"Data": coreData};
+
+    final authResultStr = await apiClient.authRequest(authRequest);
+
+    final token = await TokenStorage().getToken();
+
+    final coreResult = await apiClient.coreRequest(
+      token as String,
+      coreRequest,
+      command,
+    );
+
+    int statusCode = coreResult['statusCode'];
+    String responseBody = coreResult['body'];
+
+    if (statusCode == 400) {
+      // Return error JSON with the message from the 400 response
+      return jsonEncode({
+        "status": "error",
+        "message": responseBody,
+      });
+    } else if (statusCode == 401) {
+      // Handle 401 response (decrypt and parse)
+      try {
+        var parsedResponse = cleanResponse(decrypt(responseBody, strKey, strIV));
+        
+        // Handle response structure: Data can be a string or an object
+        String message;
+        if (parsedResponse['Data'] is String) {
+          // Data is a string message (e.g., "Otp verified successfully")
+          message = parsedResponse['Data'] as String;
+        } else if (parsedResponse['Data'] is Map) {
+          // Data is an object - extract message and optionally CustomerId/AppId
+          Map<String, dynamic> dataObj = parsedResponse['Data'] as Map<String, dynamic>;
+          message = dataObj['Display']?.toString() ?? 'OTP verified successfully!';
+          
+          // PHASE 2: Store CustomerId and AppId securely (if present)
+          final sensitiveStorage = SensitiveDataStorage();
+          if (dataObj['CustomerId'] != null) {
+            String customerIdStr = dataObj['CustomerId'].toString();
+            await sensitiveStorage.setCustomerId(customerIdStr);
+            await prefs.setString('customerId', customerIdStr);
+          }
+          if (dataObj['AppId'] != null) {
+            String appIdStr = dataObj['AppId'].toString();
+            await sensitiveStorage.setAppId(appIdStr);
+            await prefs.setString('appId', appIdStr);
+          }
+        } else {
+          message = 'OTP verified successfully!';
+        }
+        
+        return jsonEncode({
+          "status": "success",
+          "message": message,
+        });
+      } catch (e) {
+        return jsonEncode({
+          "status": "error",
+          "message": "Failed to process response: ${e.toString()}",
+        });
+      }
+    } else if (statusCode == 200) {
+      // Handle 200 response (decrypt and parse)
+      try {
+        var parsedResponse = cleanResponse(decrypt(responseBody, strKey, strIV));
+        
+        // Handle response structure: Data can be a string or an object
+        String message;
+        if (parsedResponse['Data'] is String) {
+          // Data is a string message (e.g., "Otp verified successfully")
+          message = parsedResponse['Data'] as String;
+        } else if (parsedResponse['Data'] is Map) {
+          // Data is an object - extract message and optionally CustomerId/AppId
+          Map<String, dynamic> dataObj = parsedResponse['Data'] as Map<String, dynamic>;
+          message = dataObj['Display']?.toString() ?? 'OTP verified successfully!';
+          
+          // PHASE 2: Store CustomerId and AppId securely (if present)
+          final sensitiveStorage = SensitiveDataStorage();
+          if (dataObj['CustomerId'] != null) {
+            String customerIdStr = dataObj['CustomerId'].toString();
+            await sensitiveStorage.setCustomerId(customerIdStr);
+            await prefs.setString('customerId', customerIdStr);
+          }
+          if (dataObj['AppId'] != null) {
+            String appIdStr = dataObj['AppId'].toString();
+            await sensitiveStorage.setAppId(appIdStr);
+            await prefs.setString('appId', appIdStr);
+          }
+        } else {
+          message = 'OTP verified successfully!';
+        }
+        return jsonEncode({
+          "status": "success",
+          "message": message,
+        });
+      } catch (e) {
+        return jsonEncode({
+          "status": "error",
+          "message": "Failed to process response: ${e.toString()}",
+        });
+      }
+    } else {
+      // Handle unexpected status codes
+      return jsonEncode({
+        "status": "error",
+        "message": "Unexpected status code: $statusCode",
+      });
+    }
+  }
+
+
+  Future<String> selfRegistration(String jsonFields) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    var uuid = const Uuid();
+    String Uid = uuid.v4();
+
+    // Parse JSON fields
+    Map<String, dynamic> registrationData;
+    try {
+      registrationData = jsonDecode(jsonFields);
+    } catch (e) {
+      return jsonEncode({
+        "status": "error",
+        "message": "Invalid JSON format: ${e.toString()}",
+      });
+    }
+
+    // Extract values from JSON
+    String FirstName = registrationData['FirstName']?.toString() ?? '';
+    String MiddleName = registrationData['MiddleName']?.toString() ?? '';
+    String LastName = registrationData['LastName']?.toString() ?? '';
+    String MobileNumber = registrationData['MobileNumber']?.toString() ?? '';
+    String IdentificationType = registrationData['IdentificationType']?.toString() ?? '';
+    String Identification = registrationData['Identification']?.toString() ?? '';
+    String Country = registrationData['Country']?.toString() ?? '';
+    String Email = registrationData['Email']?.toString() ?? '';
+    String Organization = registrationData['Organization']?.toString() ?? '';
+    String Department = registrationData['Department']?.toString() ?? '';
+    String EmployeeCode = registrationData['EmployeeCode']?.toString() ?? '';
+    String VerificationMode = registrationData['VerificationMode']?.toString() ?? '';
+    String OTP = registrationData['OTP']?.toString() ?? '';
+    String PIN = registrationData['PIN']?.toString() ?? '';
+
+    String service = "PROFILE";
+    String action = "BASE";
+    String command = "SELFREGISTRATION";
+    String platform = "WEB";
+    String CustomerId = "";
+    String device = "WEB";
+    String Lat = "0.200";
+    String Lon = "-1.01";
+
+    // Initialize F fields array
+    Map<String, String> F = {
+      for (var item in List.generate(41, (index) => index))
+        'F${item.toString().padLeft(3, '0')}': ''
+    };
+
+    // Set service fields
+    F['F000'] = service;
+    F['F001'] = action;
+    F['F002'] = command;
+    F['F003'] = "ELMSAFRICA"; // Hardcoded AppId
+    F['F004'] = CustomerId;
+    F['F005'] = MobileNumber;
+    F['F007'] = encrypt(PIN, publicKeyString);
+    F['F009'] = device;
+    F['F010'] = device;
+    F['F011'] = "YES";
+    F['F014'] = platform;
+
+    // Set registration data fields
+    F['F021'] = MobileNumber;
+    F['F022'] = Identification;
+    F['F023'] = FirstName;
+    F['F024'] = MiddleName;
+    F['F025'] = LastName;
+    F['F026'] = EmployeeCode;
+    F['F027'] = VerificationMode;
+    F['F028'] = Email;
+    F['F029'] = IdentificationType;
+    F['F030'] = Country;
+    F['F031'] = Organization;
+    F['F032'] = Department;
+    F['F033'] = OTP;
+
+    ApiClient apiClient = ApiClient();
+
+    String trxData = jsonEncode(F);
+
+    Map<String, String> appDataMap = {
+      "UniqueId": Uid,
+      "AppId": "",
+      "device": device,
+      "platform": platform,
+      "CustomerId": CustomerId,
+      "MobileNumber": MobileNumber,
+      "Lat": Lat,
+      "Lon": Lon,
+    };
+
+    String appData = jsonEncode(appDataMap);
+
+    String hashedTrxData = hash(trxData, device);
+
+    String strKey = apiClient.generateRandomString(16);
+    String strIV = apiClient.generateRandomString(16);
+
+    String Rsc = hashedTrxData;
+    String Rrk = encrypt(strKey, publicKeyString);
+    String Rrv = encrypt(strIV, publicKeyString);
+    String Aad = encrypt1(appData, strKey, strIV);
+
+    String coreData = encrypt1(trxData, strKey, strIV);
+
+    Map<String, String> authRequest = {
+      "H00": Uid,
+      "H03": Rsc,
+      "H01": Rrk,
+      "H02": Rrv,
+      "H04": Aad,
+    };
+
+    Map<String, String> coreRequest = {"Data": coreData};
+
+    final authResultStr = await apiClient.authRequest(authRequest);
+
+    final token = await TokenStorage().getToken();
+
+    final coreResult = await apiClient.coreRequest(
+      token as String,
+      coreRequest,
+      command,
+    );
+
+    int statusCode = coreResult['statusCode'];
+    String responseBody = coreResult['body'];
+
+    if (statusCode == 400) {
+      // Return error JSON with the message from the 400 response
+      return jsonEncode({
+        "status": "error",
+        "message": responseBody,
+      });
+    } else if (statusCode == 401) {
+      // Handle 401 response (decrypt and parse)
+      try {
+        var parsedResponse = cleanResponse(decrypt(responseBody, strKey, strIV));
+        
+        // Handle response structure: Data can be a string or an object
+        String message;
+        if (parsedResponse['Data'] is String) {
+          // Data is a string message (e.g., "Registration successful!")
+          message = parsedResponse['Data'] as String;
+        } else if (parsedResponse['Data'] is Map) {
+          // Data is an object - extract message and optionally CustomerId/AppId
+          Map<String, dynamic> dataObj = parsedResponse['Data'] as Map<String, dynamic>;
+          message = dataObj['Display']?.toString() ?? 'Registration successful!';
+          
+          // PHASE 2: Store CustomerId and AppId securely (if present)
+          final sensitiveStorage = SensitiveDataStorage();
+          if (dataObj['CustomerId'] != null) {
+            String customerIdStr = dataObj['CustomerId'].toString();
+            await sensitiveStorage.setCustomerId(customerIdStr);
+            await prefs.setString('customerId', customerIdStr);
+          }
+          if (dataObj['AppId'] != null) {
+            String appIdStr = dataObj['AppId'].toString();
+            await sensitiveStorage.setAppId(appIdStr);
+            await prefs.setString('appId', appIdStr);
+          }
+        } else {
+          message = 'Registration successful!';
+        }
+        
+        return jsonEncode({
+          "status": "success",
+          "message": message,
+        });
+      } catch (e) {
+        return jsonEncode({
+          "status": "error",
+          "message": "Failed to process response: ${e.toString()}",
+        });
+      }
+    } else if (statusCode == 200) {
+      // Handle 200 response (decrypt and parse)
+      try {
+        var parsedResponse = cleanResponse(decrypt(responseBody, strKey, strIV));
+        
+        // Handle response structure: Data can be a string or an object
+        String message;
+        if (parsedResponse['Data'] is String) {
+          // Data is a string message (e.g., "Registration successful!")
+          message = parsedResponse['Data'] as String;
+        } else if (parsedResponse['Data'] is Map) {
+          // Data is an object - extract message and optionally CustomerId/AppId
+          Map<String, dynamic> dataObj = parsedResponse['Data'] as Map<String, dynamic>;
+          message = dataObj['Display']?.toString() ?? 'Registration successful!';
+          
+          // PHASE 2: Store CustomerId and AppId securely (if present)
+          final sensitiveStorage = SensitiveDataStorage();
+          if (dataObj['CustomerId'] != null) {
+            String customerIdStr = dataObj['CustomerId'].toString();
+            await sensitiveStorage.setCustomerId(customerIdStr);
+            await prefs.setString('customerId', customerIdStr);
+          }
+          if (dataObj['AppId'] != null) {
+            String appIdStr = dataObj['AppId'].toString();
+            await sensitiveStorage.setAppId(appIdStr);
+            await prefs.setString('appId', appIdStr);
+          }
+        } else {
+          message = 'Registration successful!';
+        }
+        
+        return jsonEncode({
+          "status": "success",
+          "message": message,
+        });
+      } catch (e) {
+        return jsonEncode({
+          "status": "error",
+          "message": "Failed to process response: ${e.toString()}",
+        });
+      }
+    } else {
+      // Handle unexpected status codes
+      return jsonEncode({
+        "status": "error",
+        "message": "Unexpected status code: $statusCode",
+      });
+    }
+  }
+
   Future<String> login(String pin, String mobileNumber) async {
     var uuid = const Uuid();
     String Uid = uuid.v4();
