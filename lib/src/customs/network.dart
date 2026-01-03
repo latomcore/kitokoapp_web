@@ -7,6 +7,7 @@ import 'package:dio/io.dart';
 import 'package:flutter/foundation.dart';
 import 'package:kitokopay/src/customs/constatnts.dart';
 import 'package:kitokopay/src/customs/failure.dart';
+import 'package:kitokopay/service/certificate_pinning_service.dart'; // PHASE 3: Certificate pinning
 import 'package:logger/logger.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 
@@ -52,11 +53,23 @@ class NetworkUtil {
       );
     }
 
-    // SSL Certificate Validation - SECURITY FIX
-    // Removed dangerous certificate bypass for production security
-    // Certificate validation is now properly enforced
+    // PHASE 3: Certificate Pinning + SSL Certificate Validation
+    // Certificate pinning adds extra security by validating certificate fingerprints
     // Only bypass in development with explicit flag: --dart-define=ALLOW_INSECURE_SSL=true
     (dio.httpClientAdapter as IOHttpClientAdapter).createHttpClient = () {
+      // PHASE 3: Try to use certificate pinning service
+      final certPinningService = CertificatePinningService();
+      final pinnedClient = certPinningService.createPinnedHttpClient();
+      
+      if (pinnedClient != null) {
+        // Certificate pinning is enabled and configured
+        if (kDebugMode) {
+          debugPrint('✅ Certificate pinning ENABLED (extra SSL security)');
+        }
+        return pinnedClient;
+      }
+      
+      // Fallback: Standard SSL validation (or web platform)
       final client = HttpClient();
       
       // Check if insecure SSL is explicitly allowed (development only)

@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:kitokopay/config/app_config.dart';
 import 'package:kitokopay/service/secure_storage_service.dart';
+import 'package:kitokopay/service/rate_limiter.dart'; // PHASE 3: Rate limiting
+import 'package:kitokopay/service/rate_limit_exception.dart'; // PHASE 3: Rate limit exception
 import 'package:flutter/foundation.dart';
 
 /// Public Key Service
@@ -40,6 +42,16 @@ class PublicKeyService {
       final credentials = '$username:$password';
       final base64Credentials = base64Encode(utf8.encode(credentials));
       final basicAuth = 'Basic $base64Credentials';
+
+      // PHASE 3: Check rate limit before making request
+      final rateLimiter = RateLimiter();
+      if (!rateLimiter.checkRateLimit(AppConfig.loadApiEndPoint)) {
+        final waitTime = rateLimiter.getWaitTime(AppConfig.loadApiEndPoint);
+        throw RateLimitException(
+          'Too many requests to load endpoint. Please wait ${waitTime}s before trying again.',
+          waitTime: waitTime,
+        );
+      }
 
       // Make request to /load endpoint
       final response = await http.post(

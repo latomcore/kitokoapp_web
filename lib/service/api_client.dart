@@ -6,7 +6,10 @@ import 'package:kitokopay/service/token_storage.dart';
 import 'package:get/get.dart';
 import 'package:kitokopay/config/app_config.dart';
 import 'package:kitokopay/service/token_refresh_service.dart'; // PHASE 3: Token expiration
-import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
+import 'package:kitokopay/service/rate_limiter.dart'; // PHASE 3: Rate limiting
+import 'package:kitokopay/service/rate_limit_exception.dart'; // PHASE 3: Rate limit exception
+import 'package:kitokopay/service/request_signer.dart'; // PHASE 3: Request signing
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb, debugPrint;
 
 class ApiClient extends GetConnect {
   static String get elmsBaseUrl => AppConfig.elmsBaseUrl;
@@ -69,12 +72,47 @@ class ApiClient extends GetConnect {
   }
 
   Future<void> authRequest(Map<String, String> authRequest) async {
+    // PHASE 3: Check rate limit before making request
+    final rateLimiter = RateLimiter();
+    if (!rateLimiter.checkRateLimit(authApiEndPoint)) {
+      final waitTime = rateLimiter.getWaitTime(authApiEndPoint);
+      throw RateLimitException(
+        'Too many requests. Please wait ${waitTime}s before trying again.',
+        waitTime: waitTime,
+      );
+    }
+
     try {
       var headers = {
         'Content-Type': 'application/json',
       };
 
       String requestBody = json.encode(authRequest);
+      
+      // PHASE 3: Sign request (optional - can be enabled/disabled)
+      // Request signing adds extra security by preventing tampering
+      // NOTE: Disabled on web to avoid CORS preflight issues
+      // NOTE: If server doesn't support request signing, these headers are ignored
+      if (!kIsWeb) {
+        // Only sign requests on mobile (web has CORS restrictions)
+        try {
+          final requestSigner = RequestSigner();
+          final signatureHeaders = await requestSigner.signRequest(
+            method: 'POST',
+            url: authApiEndPoint,
+            body: authRequest,
+            token: null, // No token for auth requests
+          );
+          headers.addAll(signatureHeaders);
+        } catch (e) {
+          // If request signing fails, continue without it (non-critical)
+          if (kDebugMode) {
+            debugPrint('⚠️ Request signing failed, continuing without signature: $e');
+          }
+        }
+      } else if (kDebugMode) {
+        debugPrint('ℹ️ Request signing skipped on web (CORS compatibility)');
+      }
       
       // Log the request details (only in debug mode, sanitized)
       if (kDebugMode) {
@@ -116,16 +154,21 @@ class ApiClient extends GetConnect {
           // Don't log full error response (may contain sensitive info)
         }
       }
-    } catch (e, stackTrace) {
+    } catch (e) {
       // Log errors only in debug mode, sanitized
       if (kDebugMode) {
         debugPrint('═══════════════════════════════════════════════════════════');
         debugPrint('❌ AUTH REQUEST ERROR');
         debugPrint('═══════════════════════════════════════════════════════════');
         debugPrint('Error Type: ${e.runtimeType}');
-        // Don't log full error message (may contain sensitive data)
-        debugPrint('Error: [Error occurred during auth request]');
-        // Don't log full stack trace in production
+        // Log error message for debugging (helps identify connection issues)
+        final errorMsg = e.toString();
+        // Don't log full error if it contains sensitive data, but show enough to debug
+        if (errorMsg.length > 200) {
+          debugPrint('Error: ${errorMsg.substring(0, 200)}...');
+        } else {
+          debugPrint('Error: $errorMsg');
+        }
         debugPrint('═══════════════════════════════════════════════════════════');
       }
       rethrow;
@@ -152,10 +195,48 @@ class ApiClient extends GetConnect {
       };
     }
     
+    // PHASE 3: Check rate limit before making request
+    final rateLimiter = RateLimiter();
+    if (!rateLimiter.checkRateLimit(coreApiEndPoint)) {
+      final waitTime = rateLimiter.getWaitTime(coreApiEndPoint);
+      return {
+        "statusCode": 429, // Too Many Requests
+        "body": jsonEncode({
+          "status": "error",
+          "message": "Too many requests. Please wait ${waitTime}s before trying again.",
+        }),
+      };
+    }
+    
     var headers = {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer $token',
     };
+    
+    // PHASE 3: Sign request (optional - can be enabled/disabled)
+    // Request signing adds extra security by preventing tampering
+    // NOTE: Disabled on web to avoid CORS preflight issues
+    // NOTE: If server doesn't support request signing, these headers are ignored
+    if (!kIsWeb) {
+      // Only sign requests on mobile (web has CORS restrictions)
+      try {
+        final requestSigner = RequestSigner();
+        final signatureHeaders = await requestSigner.signRequest(
+          method: 'POST',
+          url: coreApiEndPoint,
+          body: coreRequest,
+          token: token,
+        );
+        headers.addAll(signatureHeaders);
+      } catch (e) {
+        // If request signing fails, continue without it (non-critical)
+        if (kDebugMode) {
+          debugPrint('⚠️ Request signing failed, continuing without signature: $e');
+        }
+      }
+    } else if (kDebugMode) {
+      debugPrint('ℹ️ Request signing skipped on web (CORS compatibility)');
+    }
 
     try {
       // Make the POST request
